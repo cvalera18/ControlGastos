@@ -1,7 +1,7 @@
 name: control_gastos
-description: "A new Flutter project."
+description: "Control de gastos compartido con Clean Architecture + BLoC"
 publish_to: 'none'
-version: 0.1.0+1
+version: 1.0.0+1
 
 environment:
   sdk: ^3.11.1
@@ -9,6 +9,37 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  # State Management
+  flutter_bloc: ^8.1.6
+  bloc: ^8.1.4
+
+  # Dependency Injection
+  get_it: ^7.6.7
+
+  # Functional Programming
+  dartz: ^0.10.1
+
+  # Equality
+  equatable: ^2.0.5
+
+  # Firebase
+  firebase_core: ^3.6.0
+  cloud_firestore: ^5.4.4
+  firebase_auth: ^5.3.1
+
+  # Local cache (JSON via SharedPreferences)
+
+  # Navigation
+  go_router: ^14.2.7
+
+  # Charts
+  fl_chart: ^0.69.0
+
+  # Utils
+  intl: ^0.19.0
+  shared_preferences: ^2.3.2
+  uuid: ^4.4.2
 
 dev_dependencies:
   flutter_test:
