@@ -160,7 +160,7 @@ class _GroupListPageState extends State<GroupListPage> {
         title: const Text('Grupos'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => GoRouter.of(context).go('/home'),
+          onPressed: () => GoRouter.of(context).pop(),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -227,7 +227,10 @@ class _GroupListPageState extends State<GroupListPage> {
                         const Icon(Icons.arrow_forward_ios, size: 16),
                       ],
                     ),
-                    onTap: () => GoRouter.of(context).go('/groups/${group.id}', extra: group.name),
+                    onTap: () async {
+                      await GoRouter.of(context).push('/groups/${group.id}', extra: group.name);
+                      _fetch();
+                    },
                   ),
                 );
               },

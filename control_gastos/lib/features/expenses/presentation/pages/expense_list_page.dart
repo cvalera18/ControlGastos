@@ -43,7 +43,7 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
       ),
       drawer: _AppDrawer(userName: _userName, userEmail: _userEmail),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.go('/add-expense'),
+        onPressed: () => context.push('/add-expense'),
         child: const Icon(Icons.add),
       ),
       body: BlocConsumer<ExpenseBloc, ExpenseState>(
@@ -94,15 +94,50 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
                     itemCount: state.expenses.length,
                     itemBuilder: (context, index) {
                       final expense = state.expenses[index];
-                      return ExpenseCard(
-                        expense: expense,
-                        onEdit: () => GoRouter.of(context).go(
-                          '/add-expense',
-                          extra: expense,
+                      return Dismissible(
+                        key: ValueKey(expense.id),
+                        direction: DismissDirection.endToStart,
+                        confirmDismiss: (_) => showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Eliminar gasto'),
+                            content: Text('¿Eliminar "${expense.description}"?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Cancelar'),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Theme.of(context).colorScheme.error,
+                                  foregroundColor: Theme.of(context).colorScheme.onError,
+                                ),
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: const Text('Eliminar'),
+                              ),
+                            ],
+                          ),
                         ),
-                        onDelete: () {
+                        onDismissed: (_) {
                           context.read<ExpenseBloc>().add(DeleteExpenseEvent(expense.id));
                         },
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.error,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.delete_outline,
+                            color: Theme.of(context).colorScheme.onError,
+                          ),
+                        ),
+                        child: ExpenseCard(
+                          expense: expense,
+                          onTap: () => context.push('/add-expense', extra: expense),
+                        ),
                       );
                     },
                   ),
@@ -179,7 +214,7 @@ class _AppDrawer extends StatelessWidget {
             title: const Text('Análisis'),
             onTap: () {
               Navigator.pop(context);
-              GoRouter.of(context).go('/analytics');
+              GoRouter.of(context).push('/analytics');
             },
           ),
           ListTile(
@@ -187,7 +222,7 @@ class _AppDrawer extends StatelessWidget {
             title: const Text('Grupos'),
             onTap: () {
               Navigator.pop(context);
-              GoRouter.of(context).go('/groups');
+              GoRouter.of(context).push('/groups');
             },
           ),
           const Divider(),
@@ -196,7 +231,7 @@ class _AppDrawer extends StatelessWidget {
             title: const Text('Categorías'),
             onTap: () {
               Navigator.pop(context);
-              GoRouter.of(context).go('/categories');
+              GoRouter.of(context).push('/categories');
             },
           ),
           ListTile(
@@ -204,7 +239,7 @@ class _AppDrawer extends StatelessWidget {
             title: const Text('Métodos de pago'),
             onTap: () {
               Navigator.pop(context);
-              GoRouter.of(context).go('/payment-methods');
+              GoRouter.of(context).push('/payment-methods');
             },
           ),
           const Divider(),

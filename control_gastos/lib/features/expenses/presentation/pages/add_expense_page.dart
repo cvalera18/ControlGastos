@@ -163,14 +163,14 @@ class _AddExpensePageState extends State<AddExpensePage> {
         title: Text(_isEditMode ? 'Editar Gasto' : 'Nuevo Gasto'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => GoRouter.of(context).go('/home'),
+          onPressed: () => GoRouter.of(context).pop(),
         ),
       ),
       body: BlocListener<ExpenseBloc, ExpenseState>(
         listener: (context, state) {
           if (state is ExpenseOperationSuccess) {
             context.showSnackBar(state.message);
-            GoRouter.of(context).go('/home');
+            GoRouter.of(context).pop();
           } else if (state is ExpenseError) {
             context.showSnackBar(state.message, isError: true);
           }

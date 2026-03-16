@@ -6,15 +6,11 @@ import 'package:control_gastos/features/expenses/domain/entities/expense.dart';
 class ExpenseCard extends StatelessWidget {
   final Expense expense;
   final VoidCallback? onTap;
-  final VoidCallback? onEdit;
-  final VoidCallback? onDelete;
 
   const ExpenseCard({
     super.key,
     required this.expense,
     this.onTap,
-    this.onEdit,
-    this.onDelete,
   });
 
   @override
@@ -36,31 +32,13 @@ class ExpenseCard extends StatelessWidget {
         subtitle: Text(
           '${expense.categoryName} · ${DateFormatter.formatRelative(expense.date)}',
         ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              CurrencyFormatter.format(expense.amount),
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.error,
-                fontSize: 15,
-              ),
-            ),
-            if (onEdit != null)
-              IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: onEdit,
-                iconSize: 20,
-              ),
-            if (onDelete != null)
-              IconButton(
-                icon: const Icon(Icons.delete_outline),
-                onPressed: onDelete,
-                color: colorScheme.error,
-                iconSize: 20,
-              ),
-          ],
+        trailing: Text(
+          CurrencyFormatter.format(expense.amount),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.error,
+            fontSize: 15,
+          ),
         ),
       ),
     );

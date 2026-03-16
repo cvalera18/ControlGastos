@@ -155,7 +155,7 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
         title: const Text('Categorías'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => GoRouter.of(context).go('/home'),
+          onPressed: () => GoRouter.of(context).pop(),
         ),
       ),
       floatingActionButton: FloatingActionButton(

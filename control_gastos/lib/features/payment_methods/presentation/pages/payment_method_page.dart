@@ -116,7 +116,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
         title: const Text('Métodos de pago'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => GoRouter.of(context).go('/home'),
+          onPressed: () => GoRouter.of(context).pop(),
         ),
       ),
       floatingActionButton: FloatingActionButton(

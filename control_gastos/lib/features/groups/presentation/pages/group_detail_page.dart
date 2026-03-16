@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:control_gastos/core/extensions/context_extensions.dart';
+import 'package:control_gastos/core/utils/currency_formatter.dart';
 import 'package:control_gastos/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:control_gastos/features/groups/presentation/bloc/group_bloc.dart';
 import 'package:control_gastos/features/groups/presentation/pages/add_group_expense_page.dart';
@@ -61,7 +62,7 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
         title: Text(widget.groupName),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => GoRouter.of(context).go('/groups'),
+          onPressed: () => GoRouter.of(context).pop(),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -99,15 +100,39 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
                 ),
               );
             }
-            return ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: state.expenses.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: GroupExpenseCard(expense: state.expenses[index]),
-                );
-              },
+            final total = state.expenses.fold(0.0, (sum, e) => sum + e.amount);
+            return Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Total', style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        CurrencyFormatter.format(total),
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: state.expenses.length,
+                    itemBuilder: (context, index) {
+                      return GroupExpenseCard(expense: state.expenses[index]);
+                    },
+                  ),
+                ),
+              ],
             );
           }
           return const SizedBox.shrink();
