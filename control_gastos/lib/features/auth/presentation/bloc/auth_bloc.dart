@@ -5,6 +5,8 @@ import 'package:control_gastos/features/auth/domain/usecases/get_current_user_us
 import 'package:control_gastos/features/auth/domain/usecases/login_usecase.dart';
 import 'package:control_gastos/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:control_gastos/features/auth/domain/usecases/register_usecase.dart';
+import 'package:control_gastos/features/categories/domain/usecases/seed_default_categories_usecase.dart';
+import 'package:control_gastos/features/payment_methods/domain/usecases/seed_default_payment_methods_usecase.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
@@ -14,12 +16,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final RegisterUseCase registerUseCase;
   final LogoutUseCase logoutUseCase;
   final GetCurrentUserUseCase getCurrentUserUseCase;
+  final SeedDefaultCategoriesUseCase seedDefaultCategoriesUseCase;
+  final SeedDefaultPaymentMethodsUseCase seedDefaultPaymentMethodsUseCase;
 
   AuthBloc({
     required this.loginUseCase,
     required this.registerUseCase,
     required this.logoutUseCase,
     required this.getCurrentUserUseCase,
+    required this.seedDefaultCategoriesUseCase,
+    required this.seedDefaultPaymentMethodsUseCase,
   }) : super(const AuthInitial()) {
     on<AuthCheckStatusEvent>(_onCheckStatus);
     on<AuthLoginEvent>(_onLogin);
@@ -57,9 +63,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         name: event.name,
       ),
     );
-    result.fold(
-      (failure) => emit(AuthError(failure.message)),
-      (user) => emit(AuthAuthenticated(user)),
+    await result.fold(
+      (failure) async => emit(AuthError(failure.message)),
+      (user) async {
+        await seedDefaultCategoriesUseCase(user.id);
+        await seedDefaultPaymentMethodsUseCase(user.id);
+        emit(AuthAuthenticated(user));
+      },
     );
   }
 

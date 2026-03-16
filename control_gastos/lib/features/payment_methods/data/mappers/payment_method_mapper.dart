@@ -9,6 +9,7 @@ class PaymentMethodMapper {
         userId: model.userId,
         name: model.name,
         icon: model.icon,
+        type: model.type,
         isDefault: model.isDefault,
       );
 
@@ -17,6 +18,7 @@ class PaymentMethodMapper {
         userId: entity.userId,
         name: entity.name,
         icon: entity.icon,
+        type: entity.type,
         isDefault: entity.isDefault,
       );
 }

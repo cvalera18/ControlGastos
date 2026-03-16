@@ -32,9 +32,11 @@ class AppConstants {
 
   // Default payment methods
   static const List<Map<String, dynamic>> defaultPaymentMethods = [
-    {'name': 'Efectivo', 'icon': '💵'},
-    {'name': 'Tarjeta de crédito', 'icon': '💳'},
-    {'name': 'Tarjeta de débito', 'icon': '💳'},
-    {'name': 'Transferencia', 'icon': '🏦'},
+    {'name': 'Efectivo', 'icon': '💵', 'type': 'cash'},
+    {'name': 'Tarjeta de crédito', 'icon': '💳', 'type': 'creditCard'},
+    {'name': 'Cuenta corriente', 'icon': '🏦', 'type': 'checkingAccount'},
+    {'name': 'Cuenta ahorro', 'icon': '🐖', 'type': 'savingsAccount'},
+    {'name': 'Cuenta vista', 'icon': '🏧', 'type': 'vistaAccount'},
+    {'name': 'Billetera digital', 'icon': '📱', 'type': 'digitalWallet'},
   ];
 }

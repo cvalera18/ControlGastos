@@ -1,8 +1,11 @@
+import 'package:control_gastos/features/payment_methods/domain/entities/payment_method_type.dart';
+
 class PaymentMethodModel {
   final String id;
   final String userId;
   final String name;
   final String icon;
+  final PaymentMethodType type;
   final bool isDefault;
 
   const PaymentMethodModel({
@@ -10,6 +13,7 @@ class PaymentMethodModel {
     required this.userId,
     required this.name,
     required this.icon,
+    this.type = PaymentMethodType.other,
     this.isDefault = false,
   });
 
@@ -18,6 +22,7 @@ class PaymentMethodModel {
         userId: json['userId'] as String,
         name: json['name'] as String,
         icon: json['icon'] as String,
+        type: PaymentMethodType.fromString(json['type'] as String?),
         isDefault: json['isDefault'] as bool? ?? false,
       );
 
@@ -26,6 +31,7 @@ class PaymentMethodModel {
         'userId': userId,
         'name': name,
         'icon': icon,
+        'type': type.name,
         'isDefault': isDefault,
       };
 }

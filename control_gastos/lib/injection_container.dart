@@ -23,6 +23,7 @@ import 'package:control_gastos/features/categories/domain/repositories/category_
 import 'package:control_gastos/features/categories/domain/usecases/add_category_usecase.dart';
 import 'package:control_gastos/features/categories/domain/usecases/delete_category_usecase.dart';
 import 'package:control_gastos/features/categories/domain/usecases/get_categories_usecase.dart';
+import 'package:control_gastos/features/categories/domain/usecases/seed_default_categories_usecase.dart';
 import 'package:control_gastos/features/categories/domain/usecases/update_category_usecase.dart';
 import 'package:control_gastos/features/categories/presentation/bloc/category_bloc.dart';
 
@@ -43,6 +44,7 @@ import 'package:control_gastos/features/payment_methods/domain/repositories/paym
 import 'package:control_gastos/features/payment_methods/domain/usecases/add_payment_method_usecase.dart';
 import 'package:control_gastos/features/payment_methods/domain/usecases/delete_payment_method_usecase.dart';
 import 'package:control_gastos/features/payment_methods/domain/usecases/get_payment_methods_usecase.dart';
+import 'package:control_gastos/features/payment_methods/domain/usecases/seed_default_payment_methods_usecase.dart';
 import 'package:control_gastos/features/payment_methods/domain/usecases/update_payment_method_usecase.dart';
 import 'package:control_gastos/features/payment_methods/presentation/bloc/payment_method_bloc.dart';
 
@@ -91,6 +93,8 @@ Future<void> setupLocator() async {
       loginUseCase: getIt(),
       registerUseCase: getIt(),
       logoutUseCase: getIt(),
+      seedDefaultCategoriesUseCase: getIt(),
+      seedDefaultPaymentMethodsUseCase: getIt(),
     ),
   );
 
@@ -141,6 +145,7 @@ Future<void> setupLocator() async {
   getIt.registerSingleton<AddCategoryUseCase>(AddCategoryUseCase(getIt()));
   getIt.registerSingleton<UpdateCategoryUseCase>(UpdateCategoryUseCase(getIt()));
   getIt.registerSingleton<DeleteCategoryUseCase>(DeleteCategoryUseCase(getIt()));
+  getIt.registerSingleton<SeedDefaultCategoriesUseCase>(SeedDefaultCategoriesUseCase(getIt()));
 
   // Category BLoC
   getIt.registerFactory<CategoryBloc>(
@@ -170,6 +175,7 @@ Future<void> setupLocator() async {
   getIt.registerSingleton<AddPaymentMethodUseCase>(AddPaymentMethodUseCase(getIt()));
   getIt.registerSingleton<UpdatePaymentMethodUseCase>(UpdatePaymentMethodUseCase(getIt()));
   getIt.registerSingleton<DeletePaymentMethodUseCase>(DeletePaymentMethodUseCase(getIt()));
+  getIt.registerSingleton<SeedDefaultPaymentMethodsUseCase>(SeedDefaultPaymentMethodsUseCase(getIt()));
 
   // PaymentMethod BLoC
   getIt.registerFactory<PaymentMethodBloc>(
