@@ -16,9 +16,15 @@ class ExpenseListPage extends StatefulWidget {
 }
 
 class _ExpenseListPageState extends State<ExpenseListPage> {
+  late final String _userName;
+  late final String _userEmail;
+
   @override
   void initState() {
     super.initState();
+    final authState = context.read<AuthBloc>().state;
+    _userName = authState is AuthAuthenticated ? authState.user.name : '';
+    _userEmail = authState is AuthAuthenticated ? authState.user.email : '';
     _fetchExpenses();
   }
 
@@ -34,27 +40,8 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mis Gastos'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.bar_chart),
-            onPressed: () => context.go('/analytics'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.category_outlined),
-            tooltip: 'Categorías',
-            onPressed: () => context.go('/categories'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.credit_card_outlined),
-            tooltip: 'Métodos de pago',
-            onPressed: () => context.go('/payment-methods'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => context.read<AuthBloc>().add(const AuthLogoutEvent()),
-          ),
-        ],
       ),
+      drawer: _AppDrawer(userName: _userName, userEmail: _userEmail),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.go('/add-expense'),
         child: const Icon(Icons.add),
@@ -109,6 +96,10 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
                       final expense = state.expenses[index];
                       return ExpenseCard(
                         expense: expense,
+                        onEdit: () => GoRouter.of(context).go(
+                          '/add-expense',
+                          extra: expense,
+                        ),
                         onDelete: () {
                           context.read<ExpenseBloc>().add(DeleteExpenseEvent(expense.id));
                         },
@@ -121,6 +112,111 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
           }
           return const SizedBox.shrink();
         },
+      ),
+    );
+  }
+}
+
+class _AppDrawer extends StatelessWidget {
+  final String userName;
+  final String userEmail;
+
+  const _AppDrawer({required this.userName, required this.userEmail});
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                CircleAvatar(
+                  backgroundColor: Theme.of(context).colorScheme.onPrimary,
+                  radius: 28,
+                  child: Text(
+                    userName.isNotEmpty ? userName[0].toUpperCase() : '?',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  userName,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  userEmail,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.8),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.receipt_long_outlined),
+            title: const Text('Mis Gastos'),
+            selected: true,
+            onTap: () => Navigator.pop(context),
+          ),
+          ListTile(
+            leading: const Icon(Icons.bar_chart),
+            title: const Text('Análisis'),
+            onTap: () {
+              Navigator.pop(context);
+              GoRouter.of(context).go('/analytics');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.group_outlined),
+            title: const Text('Grupos'),
+            onTap: () {
+              Navigator.pop(context);
+              GoRouter.of(context).go('/groups');
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.category_outlined),
+            title: const Text('Categorías'),
+            onTap: () {
+              Navigator.pop(context);
+              GoRouter.of(context).go('/categories');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.credit_card_outlined),
+            title: const Text('Métodos de pago'),
+            onTap: () {
+              Navigator.pop(context);
+              GoRouter.of(context).go('/payment-methods');
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.logout),
+            title: const Text('Cerrar sesión'),
+            onTap: () {
+              Navigator.pop(context);
+              context.read<AuthBloc>().add(const AuthLogoutEvent());
+            },
+          ),
+        ],
       ),
     );
   }

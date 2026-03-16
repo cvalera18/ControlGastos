@@ -40,8 +40,8 @@ class GetMonthlySummaryUseCase {
             categoryMap[expense.categoryId] = CategorySummary(
               categoryId: expense.categoryId,
               categoryName: expense.categoryName,
-              categoryIcon: '',
-              categoryColor: 0xFF2196F3,
+              categoryIcon: expense.categoryIcon,
+              categoryColor: expense.categoryColor,
               total: expense.amount,
               count: 1,
               percentage: 0,

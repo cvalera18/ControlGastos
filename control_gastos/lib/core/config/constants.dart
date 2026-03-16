@@ -6,6 +6,8 @@ class AppConstants {
   static const String expensesCollection = 'expenses';
   static const String categoriesCollection = 'categories';
   static const String paymentMethodsCollection = 'payment_methods';
+  static const String groupsCollection = 'groups';
+  static const String groupExpensesCollection = 'group_expenses';
 
   // SharedPreferences keys
   static const String keyUserId = 'user_id';

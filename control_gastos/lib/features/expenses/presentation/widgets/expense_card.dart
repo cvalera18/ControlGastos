@@ -6,12 +6,14 @@ import 'package:control_gastos/features/expenses/domain/entities/expense.dart';
 class ExpenseCard extends StatelessWidget {
   final Expense expense;
   final VoidCallback? onTap;
+  final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
   const ExpenseCard({
     super.key,
     required this.expense,
     this.onTap,
+    this.onEdit,
     this.onDelete,
   });
 
@@ -22,8 +24,8 @@ class ExpenseCard extends StatelessWidget {
       child: ListTile(
         onTap: onTap,
         leading: CircleAvatar(
-          backgroundColor: colorScheme.primaryContainer,
-          child: Text(expense.categoryName.isNotEmpty ? expense.categoryName[0] : '?'),
+          backgroundColor: Color(expense.categoryColor),
+          child: Text(expense.categoryIcon, style: const TextStyle(fontSize: 18)),
         ),
         title: Text(
           expense.description,
@@ -45,6 +47,12 @@ class ExpenseCard extends StatelessWidget {
                 fontSize: 15,
               ),
             ),
+            if (onEdit != null)
+              IconButton(
+                icon: const Icon(Icons.edit_outlined),
+                onPressed: onEdit,
+                iconSize: 20,
+              ),
             if (onDelete != null)
               IconButton(
                 icon: const Icon(Icons.delete_outline),

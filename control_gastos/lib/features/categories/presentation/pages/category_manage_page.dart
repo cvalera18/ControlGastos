@@ -17,6 +17,19 @@ class CategoryManagePage extends StatefulWidget {
 class _CategoryManagePageState extends State<CategoryManagePage> {
   late final String _userId;
 
+  static const _icons = ['🍔', '🚗', '🏠', '💊', '🎮', '👗', '📚', '✈️', '💡', '📦'];
+
+  List<int> get _colors => [
+        Colors.blue.toARGB32(),
+        Colors.red.toARGB32(),
+        Colors.green.toARGB32(),
+        Colors.orange.toARGB32(),
+        Colors.purple.toARGB32(),
+        Colors.teal.toARGB32(),
+        Colors.pink.toARGB32(),
+        Colors.amber.toARGB32(),
+      ];
+
   @override
   void initState() {
     super.initState();
@@ -30,31 +43,24 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
     context.read<CategoryBloc>().add(FetchCategoriesEvent(_userId));
   }
 
-  void _showAddDialog() {
+  void _showAddDialog() => _showCategoryDialog(null);
+
+  void _showEditDialog(Category category) => _showCategoryDialog(category);
+
+  void _showCategoryDialog(Category? existing) {
     if (_userId.isEmpty) return;
     final userId = _userId;
 
-    final nameController = TextEditingController();
-    String selectedIcon = '📦';
-    int selectedColor = Colors.blue.toARGB32();
-
-    final icons = ['🍔', '🚗', '🏠', '💊', '🎮', '👗', '📚', '✈️', '💡', '📦'];
-    final colors = [
-      Colors.blue.toARGB32(),
-      Colors.red.toARGB32(),
-      Colors.green.toARGB32(),
-      Colors.orange.toARGB32(),
-      Colors.purple.toARGB32(),
-      Colors.teal.toARGB32(),
-      Colors.pink.toARGB32(),
-      Colors.amber.toARGB32(),
-    ];
+    final nameController = TextEditingController(text: existing?.name ?? '');
+    String selectedIcon = existing?.icon ?? '📦';
+    int selectedColor = existing?.color ?? Colors.blue.toARGB32();
+    final isEdit = existing != null;
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setStateDialog) => AlertDialog(
-          title: const Text('Nueva categoría'),
+          title: Text(isEdit ? 'Editar categoría' : 'Nueva categoría'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,7 +74,7 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
-                children: icons.map((icon) {
+                children: _icons.map((icon) {
                   return GestureDetector(
                     onTap: () => setStateDialog(() => selectedIcon = icon),
                     child: Container(
@@ -90,7 +96,7 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
-                children: colors.map((color) {
+                children: _colors.map((color) {
                   return GestureDetector(
                     onTap: () => setStateDialog(() => selectedColor = color),
                     child: Container(
@@ -115,17 +121,26 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
             ElevatedButton(
               onPressed: () {
                 if (nameController.text.trim().isEmpty) return;
-                final category = Category(
-                  id: const Uuid().v4(),
-                  userId: userId,
-                  name: nameController.text.trim(),
-                  icon: selectedIcon,
-                  color: selectedColor,
-                );
-                context.read<CategoryBloc>().add(AddCategoryEvent(category));
+                if (isEdit) {
+                  final updated = existing.copyWith(
+                    name: nameController.text.trim(),
+                    icon: selectedIcon,
+                    color: selectedColor,
+                  );
+                  context.read<CategoryBloc>().add(UpdateCategoryEvent(updated));
+                } else {
+                  final category = Category(
+                    id: const Uuid().v4(),
+                    userId: userId,
+                    name: nameController.text.trim(),
+                    icon: selectedIcon,
+                    color: selectedColor,
+                  );
+                  context.read<CategoryBloc>().add(AddCategoryEvent(category));
+                }
                 Navigator.pop(ctx);
               },
-              child: const Text('Agregar'),
+              child: Text(isEdit ? 'Guardar' : 'Agregar'),
             ),
           ],
         ),
@@ -186,11 +201,20 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
                     child: Text(category.icon),
                   ),
                   title: Text(category.name),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: () => context
-                        .read<CategoryBloc>()
-                        .add(DeleteCategoryEvent(category.id)),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined),
+                        onPressed: () => _showEditDialog(category),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: () => context
+                            .read<CategoryBloc>()
+                            .add(DeleteCategoryEvent(category.id)),
+                      ),
+                    ],
                   ),
                 );
               },

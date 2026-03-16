@@ -4,6 +4,7 @@ import 'package:control_gastos/features/payment_methods/domain/entities/payment_
 import 'package:control_gastos/features/payment_methods/domain/usecases/add_payment_method_usecase.dart';
 import 'package:control_gastos/features/payment_methods/domain/usecases/delete_payment_method_usecase.dart';
 import 'package:control_gastos/features/payment_methods/domain/usecases/get_payment_methods_usecase.dart';
+import 'package:control_gastos/features/payment_methods/domain/usecases/update_payment_method_usecase.dart';
 
 part 'payment_method_event.dart';
 part 'payment_method_state.dart';
@@ -11,15 +12,18 @@ part 'payment_method_state.dart';
 class PaymentMethodBloc extends Bloc<PaymentMethodEvent, PaymentMethodState> {
   final GetPaymentMethodsUseCase getPaymentMethodsUseCase;
   final AddPaymentMethodUseCase addPaymentMethodUseCase;
+  final UpdatePaymentMethodUseCase updatePaymentMethodUseCase;
   final DeletePaymentMethodUseCase deletePaymentMethodUseCase;
 
   PaymentMethodBloc({
     required this.getPaymentMethodsUseCase,
     required this.addPaymentMethodUseCase,
+    required this.updatePaymentMethodUseCase,
     required this.deletePaymentMethodUseCase,
   }) : super(const PaymentMethodInitial()) {
     on<FetchPaymentMethodsEvent>(_onFetch);
     on<AddPaymentMethodEvent>(_onAdd);
+    on<UpdatePaymentMethodEvent>(_onUpdate);
     on<DeletePaymentMethodEvent>(_onDelete);
   }
 
@@ -38,6 +42,15 @@ class PaymentMethodBloc extends Bloc<PaymentMethodEvent, PaymentMethodState> {
     result.fold(
       (failure) => emit(PaymentMethodError(failure.message)),
       (_) => emit(const PaymentMethodOperationSuccess('Método de pago agregado')),
+    );
+  }
+
+  Future<void> _onUpdate(UpdatePaymentMethodEvent event, Emitter<PaymentMethodState> emit) async {
+    emit(const PaymentMethodLoading());
+    final result = await updatePaymentMethodUseCase(event.paymentMethod);
+    result.fold(
+      (failure) => emit(PaymentMethodError(failure.message)),
+      (_) => emit(const PaymentMethodOperationSuccess('Método de pago actualizado')),
     );
   }
 

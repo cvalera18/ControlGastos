@@ -22,6 +22,7 @@ import 'package:control_gastos/features/categories/domain/repositories/category_
 import 'package:control_gastos/features/categories/domain/usecases/add_category_usecase.dart';
 import 'package:control_gastos/features/categories/domain/usecases/delete_category_usecase.dart';
 import 'package:control_gastos/features/categories/domain/usecases/get_categories_usecase.dart';
+import 'package:control_gastos/features/categories/domain/usecases/update_category_usecase.dart';
 import 'package:control_gastos/features/categories/presentation/bloc/category_bloc.dart';
 
 import 'package:control_gastos/features/expenses/data/datasources/expense_local_datasource.dart';
@@ -31,6 +32,7 @@ import 'package:control_gastos/features/expenses/domain/repositories/expense_rep
 import 'package:control_gastos/features/expenses/domain/usecases/add_expense_usecase.dart';
 import 'package:control_gastos/features/expenses/domain/usecases/delete_expense_usecase.dart';
 import 'package:control_gastos/features/expenses/domain/usecases/get_expenses_usecase.dart';
+import 'package:control_gastos/features/expenses/domain/usecases/update_expense_usecase.dart';
 import 'package:control_gastos/features/expenses/presentation/bloc/expense_bloc.dart';
 
 import 'package:control_gastos/features/payment_methods/data/datasources/payment_method_local_datasource.dart';
@@ -40,7 +42,18 @@ import 'package:control_gastos/features/payment_methods/domain/repositories/paym
 import 'package:control_gastos/features/payment_methods/domain/usecases/add_payment_method_usecase.dart';
 import 'package:control_gastos/features/payment_methods/domain/usecases/delete_payment_method_usecase.dart';
 import 'package:control_gastos/features/payment_methods/domain/usecases/get_payment_methods_usecase.dart';
+import 'package:control_gastos/features/payment_methods/domain/usecases/update_payment_method_usecase.dart';
 import 'package:control_gastos/features/payment_methods/presentation/bloc/payment_method_bloc.dart';
+
+import 'package:control_gastos/features/groups/data/datasources/group_remote_datasource.dart';
+import 'package:control_gastos/features/groups/data/repositories/group_repository_impl.dart';
+import 'package:control_gastos/features/groups/domain/repositories/group_repository.dart';
+import 'package:control_gastos/features/groups/domain/usecases/add_group_expense_usecase.dart';
+import 'package:control_gastos/features/groups/domain/usecases/create_group_usecase.dart';
+import 'package:control_gastos/features/groups/domain/usecases/get_group_expenses_usecase.dart';
+import 'package:control_gastos/features/groups/domain/usecases/get_groups_usecase.dart';
+import 'package:control_gastos/features/groups/domain/usecases/join_group_usecase.dart';
+import 'package:control_gastos/features/groups/presentation/bloc/group_bloc.dart';
 
 final getIt = GetIt.instance;
 
@@ -90,6 +103,7 @@ Future<void> setupLocator() async {
   // Expense usecases
   getIt.registerSingleton<GetExpensesUseCase>(GetExpensesUseCase(getIt()));
   getIt.registerSingleton<AddExpenseUseCase>(AddExpenseUseCase(getIt()));
+  getIt.registerSingleton<UpdateExpenseUseCase>(UpdateExpenseUseCase(getIt()));
   getIt.registerSingleton<DeleteExpenseUseCase>(DeleteExpenseUseCase(getIt()));
 
   // Expense BLoC
@@ -97,6 +111,7 @@ Future<void> setupLocator() async {
     () => ExpenseBloc(
       getExpensesUseCase: getIt(),
       addExpenseUseCase: getIt(),
+      updateExpenseUseCase: getIt(),
       deleteExpenseUseCase: getIt(),
     ),
   );
@@ -117,6 +132,7 @@ Future<void> setupLocator() async {
   // Category usecases
   getIt.registerSingleton<GetCategoriesUseCase>(GetCategoriesUseCase(getIt()));
   getIt.registerSingleton<AddCategoryUseCase>(AddCategoryUseCase(getIt()));
+  getIt.registerSingleton<UpdateCategoryUseCase>(UpdateCategoryUseCase(getIt()));
   getIt.registerSingleton<DeleteCategoryUseCase>(DeleteCategoryUseCase(getIt()));
 
   // Category BLoC
@@ -124,6 +140,7 @@ Future<void> setupLocator() async {
     () => CategoryBloc(
       getCategoriesUseCase: getIt(),
       addCategoryUseCase: getIt(),
+      updateCategoryUseCase: getIt(),
       deleteCategoryUseCase: getIt(),
     ),
   );
@@ -144,6 +161,7 @@ Future<void> setupLocator() async {
   // PaymentMethod usecases
   getIt.registerSingleton<GetPaymentMethodsUseCase>(GetPaymentMethodsUseCase(getIt()));
   getIt.registerSingleton<AddPaymentMethodUseCase>(AddPaymentMethodUseCase(getIt()));
+  getIt.registerSingleton<UpdatePaymentMethodUseCase>(UpdatePaymentMethodUseCase(getIt()));
   getIt.registerSingleton<DeletePaymentMethodUseCase>(DeletePaymentMethodUseCase(getIt()));
 
   // PaymentMethod BLoC
@@ -151,6 +169,7 @@ Future<void> setupLocator() async {
     () => PaymentMethodBloc(
       getPaymentMethodsUseCase: getIt(),
       addPaymentMethodUseCase: getIt(),
+      updatePaymentMethodUseCase: getIt(),
       deletePaymentMethodUseCase: getIt(),
     ),
   );
@@ -159,5 +178,33 @@ Future<void> setupLocator() async {
   getIt.registerSingleton<GetMonthlySummaryUseCase>(GetMonthlySummaryUseCase(getIt()));
   getIt.registerFactory<AnalyticsBloc>(
     () => AnalyticsBloc(getMonthlySummaryUseCase: getIt()),
+  );
+
+  // Group datasource
+  getIt.registerSingleton<GroupRemoteDataSource>(
+    GroupRemoteDataSourceImpl(getIt()),
+  );
+
+  // Group repository
+  getIt.registerSingleton<GroupRepository>(
+    GroupRepositoryImpl(remote: getIt()),
+  );
+
+  // Group usecases
+  getIt.registerSingleton<GetGroupsUseCase>(GetGroupsUseCase(getIt()));
+  getIt.registerSingleton<CreateGroupUseCase>(CreateGroupUseCase(getIt()));
+  getIt.registerSingleton<JoinGroupUseCase>(JoinGroupUseCase(getIt()));
+  getIt.registerSingleton<GetGroupExpensesUseCase>(GetGroupExpensesUseCase(getIt()));
+  getIt.registerSingleton<AddGroupExpenseUseCase>(AddGroupExpenseUseCase(getIt()));
+
+  // Group BLoC
+  getIt.registerFactory<GroupBloc>(
+    () => GroupBloc(
+      getGroupsUseCase: getIt(),
+      createGroupUseCase: getIt(),
+      joinGroupUseCase: getIt(),
+      getGroupExpensesUseCase: getIt(),
+      addGroupExpenseUseCase: getIt(),
+    ),
   );
 }

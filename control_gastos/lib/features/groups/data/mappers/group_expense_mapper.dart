@@ -1,12 +1,14 @@
-import 'package:control_gastos/features/expenses/data/models/expense_model.dart';
-import 'package:control_gastos/features/expenses/domain/entities/expense.dart';
+import 'package:control_gastos/features/groups/data/models/group_expense_model.dart';
+import 'package:control_gastos/features/groups/domain/entities/group_expense.dart';
 
-class ExpenseMapper {
-  ExpenseMapper._();
+class GroupExpenseMapper {
+  GroupExpenseMapper._();
 
-  static Expense toDomain(ExpenseModel model) => Expense(
+  static GroupExpense toDomain(GroupExpenseModel model) => GroupExpense(
         id: model.id,
+        groupId: model.groupId,
         userId: model.userId,
+        userName: model.userName,
         amount: model.amount,
         description: model.description,
         categoryId: model.categoryId,
@@ -18,12 +20,13 @@ class ExpenseMapper {
         date: model.date,
         notes: model.notes,
         createdAt: model.createdAt,
-        updatedAt: model.updatedAt,
       );
 
-  static ExpenseModel toModel(Expense entity) => ExpenseModel(
+  static GroupExpenseModel toModel(GroupExpense entity) => GroupExpenseModel(
         id: entity.id,
+        groupId: entity.groupId,
         userId: entity.userId,
+        userName: entity.userName,
         amount: entity.amount,
         description: entity.description,
         categoryId: entity.categoryId,
@@ -35,6 +38,5 @@ class ExpenseMapper {
         date: entity.date,
         notes: entity.notes,
         createdAt: entity.createdAt,
-        updatedAt: entity.updatedAt,
       );
 }

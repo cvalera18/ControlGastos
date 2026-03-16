@@ -23,6 +23,14 @@ class AddCategoryEvent extends CategoryEvent {
   List<Object> get props => [category];
 }
 
+class UpdateCategoryEvent extends CategoryEvent {
+  final Category category;
+  const UpdateCategoryEvent(this.category);
+
+  @override
+  List<Object> get props => [category];
+}
+
 class DeleteCategoryEvent extends CategoryEvent {
   final String categoryId;
   const DeleteCategoryEvent(this.categoryId);

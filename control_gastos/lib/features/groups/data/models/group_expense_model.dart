@@ -1,9 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 
-class ExpenseModel {
+class GroupExpenseModel {
   final String id;
+  final String groupId;
   final String userId;
+  final String userName;
   final double amount;
   final String description;
   final String categoryId;
@@ -15,11 +16,12 @@ class ExpenseModel {
   final DateTime date;
   final String? notes;
   final DateTime createdAt;
-  final DateTime updatedAt;
 
-  const ExpenseModel({
+  const GroupExpenseModel({
     required this.id,
+    required this.groupId,
     required this.userId,
+    required this.userName,
     required this.amount,
     required this.description,
     required this.categoryId,
@@ -31,37 +33,31 @@ class ExpenseModel {
     required this.date,
     this.notes,
     required this.createdAt,
-    required this.updatedAt,
   });
 
-  factory ExpenseModel.fromJson(Map<String, dynamic> json, {String? id}) {
-    DateTime parseDate(dynamic value) {
-      if (value is Timestamp) return value.toDate();
-      if (value is String) return DateTime.parse(value);
-      return DateTime.now();
-    }
-
-    return ExpenseModel(
-      id: id ?? json['id'] as String,
-      userId: json['userId'] as String,
-      amount: (json['amount'] as num).toDouble(),
-      description: json['description'] as String,
-      categoryId: json['categoryId'] as String,
-      categoryName: json['categoryName'] as String,
-      categoryIcon: json['categoryIcon'] as String? ?? '📦',
-      categoryColor: json['categoryColor'] as int? ?? Colors.blue.toARGB32(),
-      paymentMethodId: json['paymentMethodId'] as String,
-      paymentMethodName: json['paymentMethodName'] as String,
-      date: parseDate(json['date']),
-      notes: json['notes'] as String?,
-      createdAt: parseDate(json['createdAt']),
-      updatedAt: parseDate(json['updatedAt']),
-    );
-  }
+  factory GroupExpenseModel.fromJson(Map<String, dynamic> json, {String? id}) => GroupExpenseModel(
+        id: id ?? json['id'] as String,
+        groupId: json['groupId'] as String,
+        userId: json['userId'] as String,
+        userName: json['userName'] as String,
+        amount: (json['amount'] as num).toDouble(),
+        description: json['description'] as String,
+        categoryId: json['categoryId'] as String,
+        categoryName: json['categoryName'] as String,
+        categoryIcon: json['categoryIcon'] as String,
+        categoryColor: json['categoryColor'] as int,
+        paymentMethodId: json['paymentMethodId'] as String,
+        paymentMethodName: json['paymentMethodName'] as String,
+        date: (json['date'] as Timestamp).toDate(),
+        notes: json['notes'] as String?,
+        createdAt: (json['createdAt'] as Timestamp).toDate(),
+      );
 
   Map<String, dynamic> toJson() => {
         'id': id,
+        'groupId': groupId,
         'userId': userId,
+        'userName': userName,
         'amount': amount,
         'description': description,
         'categoryId': categoryId,
@@ -73,6 +69,5 @@ class ExpenseModel {
         'date': Timestamp.fromDate(date),
         'notes': notes,
         'createdAt': Timestamp.fromDate(createdAt),
-        'updatedAt': Timestamp.fromDate(updatedAt),
       };
 }

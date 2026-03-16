@@ -20,6 +20,13 @@ class AddPaymentMethodEvent extends PaymentMethodEvent {
   List<Object> get props => [paymentMethod];
 }
 
+class UpdatePaymentMethodEvent extends PaymentMethodEvent {
+  final PaymentMethod paymentMethod;
+  const UpdatePaymentMethodEvent(this.paymentMethod);
+  @override
+  List<Object> get props => [paymentMethod];
+}
+
 class DeletePaymentMethodEvent extends PaymentMethodEvent {
   final String paymentMethodId;
   const DeletePaymentMethodEvent(this.paymentMethodId);

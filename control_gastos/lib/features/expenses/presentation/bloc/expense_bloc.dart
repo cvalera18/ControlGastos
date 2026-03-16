@@ -5,6 +5,7 @@ import 'package:control_gastos/features/expenses/domain/entities/expense.dart';
 import 'package:control_gastos/features/expenses/domain/usecases/add_expense_usecase.dart';
 import 'package:control_gastos/features/expenses/domain/usecases/delete_expense_usecase.dart';
 import 'package:control_gastos/features/expenses/domain/usecases/get_expenses_usecase.dart';
+import 'package:control_gastos/features/expenses/domain/usecases/update_expense_usecase.dart';
 
 part 'expense_event.dart';
 part 'expense_state.dart';
@@ -12,6 +13,7 @@ part 'expense_state.dart';
 class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
   final GetExpensesUseCase getExpensesUseCase;
   final AddExpenseUseCase addExpenseUseCase;
+  final UpdateExpenseUseCase updateExpenseUseCase;
   final DeleteExpenseUseCase deleteExpenseUseCase;
 
   StreamSubscription<List<Expense>>? _expenseSubscription;
@@ -19,6 +21,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
   ExpenseBloc({
     required this.getExpensesUseCase,
     required this.addExpenseUseCase,
+    required this.updateExpenseUseCase,
     required this.deleteExpenseUseCase,
   }) : super(const ExpenseInitial()) {
     on<FetchExpensesEvent>(_onFetchExpenses);
@@ -56,7 +59,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
     Emitter<ExpenseState> emit,
   ) async {
     emit(const ExpenseLoading());
-    final result = await addExpenseUseCase(event.expense);
+    final result = await updateExpenseUseCase(event.expense);
     result.fold(
       (failure) => emit(ExpenseError(failure.message)),
       (_) => emit(const ExpenseOperationSuccess('Gasto actualizado correctamente')),

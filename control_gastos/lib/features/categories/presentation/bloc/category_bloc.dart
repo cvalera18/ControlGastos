@@ -4,6 +4,7 @@ import 'package:control_gastos/features/categories/domain/entities/category.dart
 import 'package:control_gastos/features/categories/domain/usecases/add_category_usecase.dart';
 import 'package:control_gastos/features/categories/domain/usecases/delete_category_usecase.dart';
 import 'package:control_gastos/features/categories/domain/usecases/get_categories_usecase.dart';
+import 'package:control_gastos/features/categories/domain/usecases/update_category_usecase.dart';
 
 part 'category_event.dart';
 part 'category_state.dart';
@@ -11,15 +12,18 @@ part 'category_state.dart';
 class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
   final GetCategoriesUseCase getCategoriesUseCase;
   final AddCategoryUseCase addCategoryUseCase;
+  final UpdateCategoryUseCase updateCategoryUseCase;
   final DeleteCategoryUseCase deleteCategoryUseCase;
 
   CategoryBloc({
     required this.getCategoriesUseCase,
     required this.addCategoryUseCase,
+    required this.updateCategoryUseCase,
     required this.deleteCategoryUseCase,
   }) : super(const CategoryInitial()) {
     on<FetchCategoriesEvent>(_onFetchCategories);
     on<AddCategoryEvent>(_onAddCategory);
+    on<UpdateCategoryEvent>(_onUpdateCategory);
     on<DeleteCategoryEvent>(_onDeleteCategory);
   }
 
@@ -44,6 +48,18 @@ class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
     result.fold(
       (failure) => emit(CategoryError(failure.message)),
       (_) => emit(const CategoryOperationSuccess('Categoría agregada correctamente')),
+    );
+  }
+
+  Future<void> _onUpdateCategory(
+    UpdateCategoryEvent event,
+    Emitter<CategoryState> emit,
+  ) async {
+    emit(const CategoryLoading());
+    final result = await updateCategoryUseCase(event.category);
+    result.fold(
+      (failure) => emit(CategoryError(failure.message)),
+      (_) => emit(const CategoryOperationSuccess('Categoría actualizada correctamente')),
     );
   }
 
