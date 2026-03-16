@@ -18,16 +18,18 @@ class AppConstants {
   // Isar DB
   static const String isarDbName = 'control_gastos_db';
 
-  // Default categories
+  // Default personal categories (3 básicas)
   static const List<Map<String, dynamic>> defaultCategories = [
-    {'name': 'Alimentación', 'icon': '🍔', 'color': 0xFFE53935},
+    {'name': 'Comida', 'icon': '🍔', 'color': 0xFFE53935},
     {'name': 'Transporte', 'icon': '🚗', 'color': 0xFF1E88E5},
     {'name': 'Entretenimiento', 'icon': '🎬', 'color': 0xFF8E24AA},
-    {'name': 'Salud', 'icon': '🏥', 'color': 0xFF43A047},
-    {'name': 'Hogar', 'icon': '🏠', 'color': 0xFFFF8F00},
-    {'name': 'Ropa', 'icon': '👕', 'color': 0xFF00ACC1},
-    {'name': 'Educación', 'icon': '📚', 'color': 0xFF3949AB},
-    {'name': 'Otros', 'icon': '📦', 'color': 0xFF757575},
+  ];
+
+  // Default group categories (mismas 3)
+  static const List<Map<String, dynamic>> defaultGroupCategories = [
+    {'name': 'Comida', 'icon': '🍔', 'color': 0xFFE53935},
+    {'name': 'Transporte', 'icon': '🚗', 'color': 0xFF1E88E5},
+    {'name': 'Entretenimiento', 'icon': '🎬', 'color': 0xFF8E24AA},
   ];
 
   // Default payment methods

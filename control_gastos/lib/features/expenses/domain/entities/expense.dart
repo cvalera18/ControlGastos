@@ -13,6 +13,7 @@ class Expense extends Equatable {
   final String paymentMethodName;
   final DateTime date;
   final String? notes;
+  final String? groupId;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -29,6 +30,7 @@ class Expense extends Equatable {
     required this.paymentMethodName,
     required this.date,
     this.notes,
+    this.groupId,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -46,6 +48,7 @@ class Expense extends Equatable {
     String? paymentMethodName,
     DateTime? date,
     String? notes,
+    String? groupId,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -62,6 +65,7 @@ class Expense extends Equatable {
       paymentMethodName: paymentMethodName ?? this.paymentMethodName,
       date: date ?? this.date,
       notes: notes ?? this.notes,
+      groupId: groupId ?? this.groupId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -77,6 +81,7 @@ class Expense extends Equatable {
         paymentMethodId,
         date,
         notes,
+        groupId,
         createdAt,
         updatedAt,
       ];

@@ -47,3 +47,19 @@ class AddGroupExpenseEvent extends GroupEvent {
   @override
   List<Object> get props => [expense];
 }
+
+class DeleteGroupExpenseEvent extends GroupEvent {
+  final String expenseId;
+  const DeleteGroupExpenseEvent(this.expenseId);
+
+  @override
+  List<Object> get props => [expenseId];
+}
+
+class DeleteGroupEvent extends GroupEvent {
+  final String groupId;
+  const DeleteGroupEvent(this.groupId);
+
+  @override
+  List<Object> get props => [groupId];
+}

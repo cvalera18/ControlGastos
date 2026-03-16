@@ -10,4 +10,6 @@ abstract class GroupRepository {
   Future<Either<Failure, void>> joinGroup(String groupId, String userId);
   Future<Either<Failure, List<GroupExpense>>> getGroupExpenses(String groupId);
   Future<Either<Failure, void>> addGroupExpense(GroupExpense expense);
+  Future<Either<Failure, void>> deleteGroupExpense(String expenseId);
+  Future<Either<Failure, void>> deleteGroup(String groupId);
 }

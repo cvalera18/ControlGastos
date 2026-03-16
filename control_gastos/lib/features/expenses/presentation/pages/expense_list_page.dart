@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:control_gastos/core/utils/currency_formatter.dart';
 import 'package:control_gastos/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:control_gastos/features/categories/presentation/bloc/category_bloc.dart';
+import 'package:control_gastos/features/groups/presentation/bloc/group_bloc.dart';
+import 'package:control_gastos/features/expenses/domain/entities/expense.dart';
+import 'package:control_gastos/features/expenses/domain/entities/expense_filter.dart';
 import 'package:control_gastos/features/expenses/presentation/bloc/expense_bloc.dart';
 import 'package:control_gastos/features/expenses/presentation/widgets/expense_card.dart';
+import 'package:control_gastos/features/payment_methods/presentation/bloc/payment_method_bloc.dart';
 import 'package:control_gastos/shared/presentation/widgets/empty_state.dart';
 import 'package:control_gastos/shared/presentation/widgets/error_dialog.dart';
+import 'package:control_gastos/shared/presentation/widgets/filter_drawer.dart';
+import 'package:control_gastos/shared/presentation/widgets/month_navigator.dart';
+import 'package:control_gastos/shared/presentation/widgets/total_card.dart';
 
 class ExpenseListPage extends StatefulWidget {
   const ExpenseListPage({super.key});
@@ -18,6 +25,9 @@ class ExpenseListPage extends StatefulWidget {
 class _ExpenseListPageState extends State<ExpenseListPage> {
   late final String _userName;
   late final String _userEmail;
+  late final String _userId;
+  late ExpenseFilter _filter;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -25,25 +35,73 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
     final authState = context.read<AuthBloc>().state;
     _userName = authState is AuthAuthenticated ? authState.user.name : '';
     _userEmail = authState is AuthAuthenticated ? authState.user.email : '';
+    _userId = authState is AuthAuthenticated ? authState.user.id : '';
+    _filter = ExpenseFilter.currentMonth();
     _fetchExpenses();
+    _fetchFilterData();
   }
 
   void _fetchExpenses() {
-    final authState = context.read<AuthBloc>().state;
-    if (authState is AuthAuthenticated) {
-      context.read<ExpenseBloc>().add(FetchExpensesEvent(authState.user.id));
+    if (_userId.isNotEmpty) {
+      context.read<ExpenseBloc>().add(FetchExpensesEvent(_userId));
     }
+  }
+
+  void _fetchFilterData() {
+    if (_userId.isEmpty) return;
+    context.read<CategoryBloc>().add(FetchCategoriesEvent(_userId));
+    context.read<PaymentMethodBloc>().add(FetchPaymentMethodsEvent(_userId));
+  }
+
+  List<Expense> _applyFilter(List<Expense> expenses) {
+    return expenses.where((e) {
+      if (e.date.isBefore(_filter.startDate) || e.date.isAfter(_filter.endDate)) return false;
+      if (_filter.categoryIds.isNotEmpty && !_filter.categoryIds.contains(e.categoryId)) return false;
+      if (_filter.paymentMethodIds.isNotEmpty && !_filter.paymentMethodIds.contains(e.paymentMethodId)) return false;
+      return true;
+    }).toList();
+  }
+
+  void _changeMonth(int delta) {
+    setState(() {
+      final newMonth = DateTime(_filter.startDate.year, _filter.startDate.month + delta, 1);
+      _filter = _filter.copyWith(
+        startDate: newMonth,
+        endDate: DateTime(newMonth.year, newMonth.month + 1, 0, 23, 59, 59),
+      );
+    });
+  }
+
+  void _clearFilters() {
+    setState(() {
+      _filter = ExpenseFilter.currentMonth();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
         title: const Text('Mis Gastos'),
+        actions: [
+          FilterBadgeIcon(
+            filter: _filter,
+            onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+          ),
+        ],
       ),
       drawer: _AppDrawer(userName: _userName, userEmail: _userEmail),
+      endDrawer: FilterDrawer(
+        filter: _filter,
+        onFilterChanged: (f) => setState(() => _filter = f),
+        onClear: _clearFilters,
+      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/add-expense'),
+        onPressed: () async {
+          await context.push('/add-expense');
+          _fetchExpenses();
+        },
         child: const Icon(Icons.add),
       ),
       body: BlocConsumer<ExpenseBloc, ExpenseState>(
@@ -59,89 +117,87 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (state is ExpenseLoaded) {
-            if (state.expenses.isEmpty) {
-              return EmptyState(
-                icon: Icons.receipt_long_outlined,
-                message: 'Sin gastos aún',
-                subtitle: 'Toca + para agregar tu primer gasto',
-              );
-            }
+            final filtered = _applyFilter(state.expenses);
+            final total = filtered.fold(0.0, (sum, e) => sum + e.amount);
+
             return Column(
               children: [
-                Container(
-                  margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
+                MonthNavigator(filter: _filter, onChangeMonth: _changeMonth),
+                if (_filter.hasExtraFilters)
+                  ActiveFilterChips(
+                    filter: _filter,
+                    onFilterChanged: (f) => setState(() => _filter = f),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Total', style: Theme.of(context).textTheme.titleMedium),
-                      Text(
-                        CurrencyFormatter.format(state.totalAmount),
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: state.expenses.length,
-                    itemBuilder: (context, index) {
-                      final expense = state.expenses[index];
-                      return Dismissible(
-                        key: ValueKey(expense.id),
-                        direction: DismissDirection.endToStart,
-                        confirmDismiss: (_) => showDialog<bool>(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Eliminar gasto'),
-                            content: Text('¿Eliminar "${expense.description}"?'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx, false),
-                                child: const Text('Cancelar'),
-                              ),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Theme.of(context).colorScheme.error,
-                                  foregroundColor: Theme.of(context).colorScheme.onError,
+                TotalCard(total: total, isFiltered: _filter.hasExtraFilters),
+                if (filtered.isEmpty)
+                  const Expanded(
+                    child: EmptyState(
+                      icon: Icons.search_off,
+                      message: 'Sin gastos',
+                      subtitle: 'No hay gastos para este periodo',
+                    ),
+                  )
+                else
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
+                        final expense = filtered[index];
+                        return Dismissible(
+                          key: ValueKey(expense.id),
+                          direction: DismissDirection.endToStart,
+                          confirmDismiss: (_) => showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Eliminar gasto'),
+                              content: Text('¿Eliminar "${expense.description}"?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('Cancelar'),
                                 ),
-                                onPressed: () => Navigator.pop(ctx, true),
-                                child: const Text('Eliminar'),
-                              ),
-                            ],
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Theme.of(context).colorScheme.error,
+                                    foregroundColor: Theme.of(context).colorScheme.onError,
+                                  ),
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text('Eliminar'),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        onDismissed: (_) {
-                          context.read<ExpenseBloc>().add(DeleteExpenseEvent(expense.id));
-                        },
-                        background: Container(
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.error,
-                            borderRadius: BorderRadius.circular(12),
+                          onDismissed: (_) {
+                            context.read<ExpenseBloc>().add(DeleteExpenseEvent(expense.id));
+                            if (expense.groupId != null) {
+                              context.read<GroupBloc>().add(DeleteGroupExpenseEvent(expense.id));
+                            }
+                          },
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 20),
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.error,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.delete_outline,
+                              color: Theme.of(context).colorScheme.onError,
+                            ),
                           ),
-                          child: Icon(
-                            Icons.delete_outline,
-                            color: Theme.of(context).colorScheme.onError,
+                          child: ExpenseCard(
+                            expense: expense,
+                            onTap: () async {
+                              await context.push('/add-expense', extra: expense);
+                              _fetchExpenses();
+                            },
                           ),
-                        ),
-                        child: ExpenseCard(
-                          expense: expense,
-                          onTap: () => context.push('/add-expense', extra: expense),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
-                ),
               ],
             );
           }
@@ -151,6 +207,8 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
     );
   }
 }
+
+// ─── App Drawer (navigation) ─────────────────────────────────────────────────
 
 class _AppDrawer extends StatelessWidget {
   final String userName;
@@ -211,7 +269,7 @@ class _AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.bar_chart),
-            title: const Text('Análisis'),
+            title: const Text('Analisis'),
             onTap: () {
               Navigator.pop(context);
               GoRouter.of(context).push('/analytics');
@@ -228,7 +286,7 @@ class _AppDrawer extends StatelessWidget {
           const Divider(),
           ListTile(
             leading: const Icon(Icons.category_outlined),
-            title: const Text('Categorías'),
+            title: const Text('Categorias'),
             onTap: () {
               Navigator.pop(context);
               GoRouter.of(context).push('/categories');
@@ -236,7 +294,7 @@ class _AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.credit_card_outlined),
-            title: const Text('Métodos de pago'),
+            title: const Text('Metodos de pago'),
             onTap: () {
               Navigator.pop(context);
               GoRouter.of(context).push('/payment-methods');
@@ -245,7 +303,7 @@ class _AppDrawer extends StatelessWidget {
           const Divider(),
           ListTile(
             leading: const Icon(Icons.logout),
-            title: const Text('Cerrar sesión'),
+            title: const Text('Cerrar sesion'),
             onTap: () {
               Navigator.pop(context);
               context.read<AuthBloc>().add(const AuthLogoutEvent());

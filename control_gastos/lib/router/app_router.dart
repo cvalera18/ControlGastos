@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:control_gastos/features/analytics/presentation/pages/analytics_page.dart';
 import 'package:control_gastos/features/auth/presentation/bloc/auth_bloc.dart';
@@ -11,6 +12,9 @@ import 'package:control_gastos/features/categories/presentation/pages/category_m
 import 'package:control_gastos/features/groups/presentation/pages/group_list_page.dart';
 import 'package:control_gastos/features/expenses/domain/entities/expense.dart';
 import 'package:control_gastos/features/groups/presentation/pages/group_detail_page.dart';
+import 'package:control_gastos/features/groups/presentation/bloc/group_category_bloc.dart';
+import 'package:control_gastos/features/payment_methods/presentation/bloc/payment_method_bloc.dart';
+import 'package:control_gastos/injection_container.dart';
 
 GoRouter createRouter(AuthBloc authBloc) {
   return GoRouter(
@@ -31,7 +35,10 @@ GoRouter createRouter(AuthBloc authBloc) {
       GoRoute(path: '/home', builder: (_, __) => const ExpenseListPage()),
       GoRoute(
         path: '/add-expense',
-        builder: (_, state) => AddExpensePage(existingExpense: state.extra as Expense?),
+        builder: (_, state) => BlocProvider(
+          create: (_) => getIt<GroupCategoryBloc>(),
+          child: AddExpensePage(existingExpense: state.extra as Expense?),
+        ),
       ),
       GoRoute(path: '/analytics', builder: (_, __) => const AnalyticsPage()),
       GoRoute(path: '/payment-methods', builder: (_, __) => const PaymentMethodPage()),
@@ -39,9 +46,15 @@ GoRouter createRouter(AuthBloc authBloc) {
       GoRoute(path: '/groups', builder: (_, __) => const GroupListPage()),
       GoRoute(
         path: '/groups/:id',
-        builder: (_, state) => GroupDetailPage(
-          groupId: state.pathParameters['id']!,
-          groupName: state.extra as String? ?? '',
+        builder: (_, state) => MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => getIt<GroupCategoryBloc>()),
+            BlocProvider(create: (_) => getIt<PaymentMethodBloc>()),
+          ],
+          child: GroupDetailPage(
+            groupId: state.pathParameters['id']!,
+            groupName: state.extra as String? ?? '',
+          ),
         ),
       ),
     ],

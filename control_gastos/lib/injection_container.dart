@@ -49,14 +49,24 @@ import 'package:control_gastos/features/payment_methods/domain/usecases/update_p
 import 'package:control_gastos/features/payment_methods/presentation/bloc/payment_method_bloc.dart';
 
 import 'package:control_gastos/features/groups/data/datasources/group_remote_datasource.dart';
+import 'package:control_gastos/features/groups/data/repositories/group_category_repository_impl.dart';
 import 'package:control_gastos/features/groups/data/repositories/group_repository_impl.dart';
+import 'package:control_gastos/features/groups/domain/repositories/group_category_repository.dart';
 import 'package:control_gastos/features/groups/domain/repositories/group_repository.dart';
+import 'package:control_gastos/features/groups/domain/usecases/add_group_category_usecase.dart';
 import 'package:control_gastos/features/groups/domain/usecases/add_group_expense_usecase.dart';
 import 'package:control_gastos/features/groups/domain/usecases/create_group_usecase.dart';
+import 'package:control_gastos/features/groups/domain/usecases/delete_group_category_usecase.dart';
+import 'package:control_gastos/features/groups/domain/usecases/delete_group_expense_usecase.dart';
+import 'package:control_gastos/features/groups/domain/usecases/delete_group_usecase.dart';
+import 'package:control_gastos/features/groups/domain/usecases/get_group_categories_usecase.dart';
 import 'package:control_gastos/features/groups/domain/usecases/get_group_expenses_usecase.dart';
 import 'package:control_gastos/features/groups/domain/usecases/get_groups_usecase.dart';
 import 'package:control_gastos/features/groups/domain/usecases/join_group_usecase.dart';
+import 'package:control_gastos/features/groups/domain/usecases/seed_default_group_categories_usecase.dart';
+import 'package:control_gastos/features/groups/domain/usecases/update_group_category_usecase.dart';
 import 'package:control_gastos/features/groups/presentation/bloc/group_bloc.dart';
+import 'package:control_gastos/features/groups/presentation/bloc/group_category_bloc.dart';
 
 final getIt = GetIt.instance;
 
@@ -121,8 +131,8 @@ Future<void> setupLocator() async {
   getIt.registerFactory<ExpenseBloc>(
     () => ExpenseBloc(
       getExpensesUseCase: getIt(),
-      addExpenseUseCase: getIt(),
       updateExpenseUseCase: getIt(),
+      addExpenseUseCase: getIt(),
       deleteExpenseUseCase: getIt(),
     ),
   );
@@ -175,7 +185,8 @@ Future<void> setupLocator() async {
   getIt.registerSingleton<AddPaymentMethodUseCase>(AddPaymentMethodUseCase(getIt()));
   getIt.registerSingleton<UpdatePaymentMethodUseCase>(UpdatePaymentMethodUseCase(getIt()));
   getIt.registerSingleton<DeletePaymentMethodUseCase>(DeletePaymentMethodUseCase(getIt()));
-  getIt.registerSingleton<SeedDefaultPaymentMethodsUseCase>(SeedDefaultPaymentMethodsUseCase(getIt()));
+  getIt.registerSingleton<SeedDefaultPaymentMethodsUseCase>(
+      SeedDefaultPaymentMethodsUseCase(getIt()));
 
   // PaymentMethod BLoC
   getIt.registerFactory<PaymentMethodBloc>(
@@ -198,9 +209,12 @@ Future<void> setupLocator() async {
     GroupRemoteDataSourceImpl(getIt()),
   );
 
-  // Group repository
+  // Group repositories
   getIt.registerSingleton<GroupRepository>(
     GroupRepositoryImpl(remote: getIt()),
+  );
+  getIt.registerSingleton<GroupCategoryRepository>(
+    GroupCategoryRepositoryImpl(getIt()),
   );
 
   // Group usecases
@@ -209,6 +223,16 @@ Future<void> setupLocator() async {
   getIt.registerSingleton<JoinGroupUseCase>(JoinGroupUseCase(getIt()));
   getIt.registerSingleton<GetGroupExpensesUseCase>(GetGroupExpensesUseCase(getIt()));
   getIt.registerSingleton<AddGroupExpenseUseCase>(AddGroupExpenseUseCase(getIt()));
+  getIt.registerSingleton<DeleteGroupExpenseUseCase>(DeleteGroupExpenseUseCase(getIt()));
+  getIt.registerSingleton<DeleteGroupUseCase>(DeleteGroupUseCase(getIt()));
+  getIt.registerSingleton<SeedDefaultGroupCategoriesUseCase>(
+      SeedDefaultGroupCategoriesUseCase(getIt()));
+
+  // Group category usecases
+  getIt.registerSingleton<GetGroupCategoriesUseCase>(GetGroupCategoriesUseCase(getIt()));
+  getIt.registerSingleton<AddGroupCategoryUseCase>(AddGroupCategoryUseCase(getIt()));
+  getIt.registerSingleton<UpdateGroupCategoryUseCase>(UpdateGroupCategoryUseCase(getIt()));
+  getIt.registerSingleton<DeleteGroupCategoryUseCase>(DeleteGroupCategoryUseCase(getIt()));
 
   // Group BLoC
   getIt.registerFactory<GroupBloc>(
@@ -218,6 +242,19 @@ Future<void> setupLocator() async {
       joinGroupUseCase: getIt(),
       getGroupExpensesUseCase: getIt(),
       addGroupExpenseUseCase: getIt(),
+      deleteGroupExpenseUseCase: getIt(),
+      deleteGroupUseCase: getIt(),
+      seedDefaultGroupCategoriesUseCase: getIt(),
+    ),
+  );
+
+  // Group Category BLoC
+  getIt.registerFactory<GroupCategoryBloc>(
+    () => GroupCategoryBloc(
+      getGroupCategoriesUseCase: getIt(),
+      addGroupCategoryUseCase: getIt(),
+      updateGroupCategoryUseCase: getIt(),
+      deleteGroupCategoryUseCase: getIt(),
     ),
   );
 }

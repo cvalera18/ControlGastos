@@ -14,6 +14,7 @@ class ExpenseModel {
   final String paymentMethodName;
   final DateTime date;
   final String? notes;
+  final String? groupId;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -30,6 +31,7 @@ class ExpenseModel {
     required this.paymentMethodName,
     required this.date,
     this.notes,
+    this.groupId,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -54,6 +56,7 @@ class ExpenseModel {
       paymentMethodName: json['paymentMethodName'] as String,
       date: parseDate(json['date']),
       notes: json['notes'] as String?,
+      groupId: json['groupId'] as String?,
       createdAt: parseDate(json['createdAt']),
       updatedAt: parseDate(json['updatedAt']),
     );
@@ -72,6 +75,7 @@ class ExpenseModel {
         'paymentMethodName': paymentMethodName,
         'date': Timestamp.fromDate(date),
         'notes': notes,
+        'groupId': groupId,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
       };

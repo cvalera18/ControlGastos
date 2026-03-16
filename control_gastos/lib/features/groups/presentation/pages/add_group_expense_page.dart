@@ -3,12 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 import 'package:control_gastos/core/extensions/context_extensions.dart';
 import 'package:control_gastos/core/utils/validators.dart';
-import 'package:control_gastos/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:control_gastos/features/categories/domain/entities/category.dart';
-import 'package:control_gastos/features/categories/presentation/bloc/category_bloc.dart';
-import 'package:control_gastos/features/expenses/presentation/widgets/category_selector.dart';
+import 'package:control_gastos/features/groups/domain/entities/group_category.dart';
 import 'package:control_gastos/features/groups/domain/entities/group_expense.dart';
 import 'package:control_gastos/features/groups/presentation/bloc/group_bloc.dart';
+import 'package:control_gastos/features/groups/presentation/bloc/group_category_bloc.dart';
 import 'package:control_gastos/features/payment_methods/domain/entities/payment_method.dart';
 import 'package:control_gastos/features/payment_methods/presentation/bloc/payment_method_bloc.dart';
 
@@ -36,17 +34,14 @@ class _AddGroupExpensePageState extends State<AddGroupExpensePage> {
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
-  Category? _selectedCategory;
+  GroupCategory? _selectedCategory;
   PaymentMethod? _selectedPaymentMethod;
 
   @override
   void initState() {
     super.initState();
-    final authState = context.read<AuthBloc>().state;
-    if (authState is AuthAuthenticated) {
-      context.read<CategoryBloc>().add(FetchCategoriesEvent(authState.user.id));
-      context.read<PaymentMethodBloc>().add(FetchPaymentMethodsEvent(authState.user.id));
-    }
+    context.read<GroupCategoryBloc>().add(FetchGroupCategoriesEvent(widget.groupId));
+    context.read<PaymentMethodBloc>().add(FetchPaymentMethodsEvent(widget.userId));
   }
 
   @override
@@ -157,15 +152,32 @@ class _AddGroupExpensePageState extends State<AddGroupExpensePage> {
                   shape: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 const SizedBox(height: 16),
-                const Text('Categoría', style: TextStyle(fontWeight: FontWeight.w500)),
+                const Text('Categoría del grupo', style: TextStyle(fontWeight: FontWeight.w500)),
                 const SizedBox(height: 8),
-                BlocBuilder<CategoryBloc, CategoryState>(
+                BlocBuilder<GroupCategoryBloc, GroupCategoryState>(
                   builder: (context, state) {
-                    if (state is CategoryLoaded) {
-                      return CategorySelector(
-                        categories: state.categories,
-                        selected: _selectedCategory,
-                        onSelected: (cat) => setState(() => _selectedCategory = cat),
+                    if (state is GroupCategoryLoaded) {
+                      if (state.categories.isEmpty) {
+                        return const Text(
+                          'Sin categorías en el grupo. Crea una desde el detalle del grupo.',
+                          style: TextStyle(color: Colors.grey, fontSize: 13),
+                        );
+                      }
+                      return Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: state.categories.map((cat) {
+                          final isSelected = _selectedCategory?.id == cat.id;
+                          return FilterChip(
+                            selected: isSelected,
+                            avatar: CircleAvatar(
+                              backgroundColor: Color(cat.color),
+                              child: Text(cat.icon, style: const TextStyle(fontSize: 12)),
+                            ),
+                            label: Text(cat.name),
+                            onSelected: (_) => setState(() => _selectedCategory = cat),
+                          );
+                        }).toList(),
                       );
                     }
                     return const LinearProgressIndicator();

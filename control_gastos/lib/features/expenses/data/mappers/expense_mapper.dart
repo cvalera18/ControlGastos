@@ -17,6 +17,7 @@ class ExpenseMapper {
         paymentMethodName: model.paymentMethodName,
         date: model.date,
         notes: model.notes,
+        groupId: model.groupId,
         createdAt: model.createdAt,
         updatedAt: model.updatedAt,
       );
@@ -34,6 +35,7 @@ class ExpenseMapper {
         paymentMethodName: entity.paymentMethodName,
         date: entity.date,
         notes: entity.notes,
+        groupId: entity.groupId,
         createdAt: entity.createdAt,
         updatedAt: entity.updatedAt,
       );
