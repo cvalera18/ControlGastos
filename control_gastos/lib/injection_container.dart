@@ -10,6 +10,7 @@ import 'package:control_gastos/features/auth/data/datasources/auth_local_datasou
 import 'package:control_gastos/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:control_gastos/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:control_gastos/features/auth/domain/repositories/auth_repository.dart';
+import 'package:control_gastos/features/auth/domain/usecases/get_current_user_usecase.dart';
 import 'package:control_gastos/features/auth/domain/usecases/login_usecase.dart';
 import 'package:control_gastos/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:control_gastos/features/auth/domain/usecases/register_usecase.dart';
@@ -78,13 +79,19 @@ Future<void> setupLocator() async {
   );
 
   // Auth usecases
+  getIt.registerSingleton<GetCurrentUserUseCase>(GetCurrentUserUseCase(getIt()));
   getIt.registerSingleton<LoginUseCase>(LoginUseCase(getIt()));
   getIt.registerSingleton<RegisterUseCase>(RegisterUseCase(getIt()));
   getIt.registerSingleton<LogoutUseCase>(LogoutUseCase(getIt()));
 
   // Auth BLoC
   getIt.registerFactory<AuthBloc>(
-    () => AuthBloc(loginUseCase: getIt(), registerUseCase: getIt(), logoutUseCase: getIt()),
+    () => AuthBloc(
+      getCurrentUserUseCase: getIt(),
+      loginUseCase: getIt(),
+      registerUseCase: getIt(),
+      logoutUseCase: getIt(),
+    ),
   );
 
   // Expense datasources

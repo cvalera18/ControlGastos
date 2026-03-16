@@ -17,8 +17,9 @@ GoRouter createRouter(AuthBloc authBloc) {
     initialLocation: '/login',
     redirect: (context, state) {
       final authState = authBloc.state;
-      final isOnAuthPage = state.matchedLocation == '/login' || state.matchedLocation == '/register';
+      if (authState is AuthInitial || authState is AuthLoading) return null;
 
+      final isOnAuthPage = state.matchedLocation == '/login' || state.matchedLocation == '/register';
       if (authState is AuthAuthenticated && isOnAuthPage) return '/home';
       if (authState is AuthUnauthenticated && !isOnAuthPage) return '/login';
       return null;
