@@ -72,6 +72,20 @@ class ActiveFilterChips extends StatelessWidget {
         spacing: 8,
         runSpacing: 4,
         children: [
+          if (filter.transactionType != TransactionType.all)
+            Chip(
+              label: Text(
+                filter.transactionType == TransactionType.expense
+                    ? 'Solo gastos'
+                    : 'Solo ingresos',
+                style: const TextStyle(fontSize: 12),
+              ),
+              deleteIcon: const Icon(Icons.close, size: 16),
+              onDeleted: () => onFilterChanged(
+                  filter.copyWith(transactionType: TransactionType.all)),
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
           if (filter.categoryIds.isNotEmpty)
             Chip(
               label: Text(
@@ -102,16 +116,23 @@ class ActiveFilterChips extends StatelessWidget {
 
 // ─── Filter Drawer ───────────────────────────────────────────────────────────
 
+typedef CategoryOption = ({String id, String name, String icon});
+typedef ExpenseCategoryEntry = ({String id, String name, String icon, DateTime date});
+
 class FilterDrawer extends StatefulWidget {
   final ExpenseFilter filter;
   final ValueChanged<ExpenseFilter> onFilterChanged;
   final VoidCallback onClear;
+  /// Cuando se pasa, las categorías se derivan de estas entradas filtrando
+  /// por el rango de fechas local (en tiempo real al cambiar la fecha).
+  final List<ExpenseCategoryEntry>? expenseEntries;
 
   const FilterDrawer({
     super.key,
     required this.filter,
     required this.onFilterChanged,
     required this.onClear,
+    this.expenseEntries,
   });
 
   @override
@@ -133,6 +154,27 @@ class _FilterDrawerState extends State<FilterDrawer> {
     _localFilter = widget.filter;
   }
 
+  Widget _buildCategoryChips(List<CategoryOption> categories) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: categories.map((cat) {
+        final selected = _localFilter.categoryIds.contains(cat.id);
+        return FilterChip(
+          selected: selected,
+          label: Text('${cat.icon} ${cat.name}', style: const TextStyle(fontSize: 13)),
+          onSelected: (val) {
+            setState(() {
+              final ids = Set<String>.from(_localFilter.categoryIds);
+              val ? ids.add(cat.id) : ids.remove(cat.id);
+              _localFilter = _localFilter.copyWith(categoryIds: ids);
+            });
+          },
+        );
+      }).toList(),
+    );
+  }
+
   void _apply() {
     widget.onFilterChanged(_localFilter);
     Navigator.pop(context);
@@ -152,10 +194,21 @@ class _FilterDrawerState extends State<FilterDrawer> {
       locale: const Locale('es'),
     );
     if (picked != null) {
+      final newStart = picked.start;
+      final newEnd = DateTime(picked.end.year, picked.end.month, picked.end.day, 23, 59, 59);
       setState(() {
+        // Calcula las categorías válidas en el nuevo rango para limpiar selecciones inválidas
+        final validIds = widget.expenseEntries
+            ?.where((e) => !e.date.isBefore(newStart) && !e.date.isAfter(newEnd))
+            .map((e) => e.id)
+            .toSet();
+        final cleanedCategoryIds = validIds != null
+            ? _localFilter.categoryIds.intersection(validIds)
+            : _localFilter.categoryIds;
         _localFilter = _localFilter.copyWith(
-          startDate: picked.start,
-          endDate: DateTime(picked.end.year, picked.end.month, picked.end.day, 23, 59, 59),
+          startDate: newStart,
+          endDate: newEnd,
+          categoryIds: cleanedCategoryIds,
         );
       });
     }
@@ -197,33 +250,58 @@ class _FilterDrawerState extends State<FilterDrawer> {
                     ),
                   ),
                   const SizedBox(height: 24),
+                  Text('Tipo de transacción',
+                      style: Theme.of(context).textTheme.titleSmall),
+                  const SizedBox(height: 8),
+                  SegmentedButton<TransactionType>(
+                    segments: const [
+                      ButtonSegment(
+                        value: TransactionType.all,
+                        label: Text('Todos'),
+                      ),
+                      ButtonSegment(
+                        value: TransactionType.expense,
+                        label: Text('Gastos'),
+                      ),
+                      ButtonSegment(
+                        value: TransactionType.income,
+                        label: Text('Ingresos'),
+                      ),
+                    ],
+                    selected: {_localFilter.transactionType},
+                    showSelectedIcon: false,
+                    onSelectionChanged: (val) => setState(() {
+                      _localFilter =
+                          _localFilter.copyWith(transactionType: val.first);
+                    }),
+                    style: const ButtonStyle(
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   Text('Categorias', style: Theme.of(context).textTheme.titleSmall),
                   const SizedBox(height: 8),
-                  BlocBuilder<CategoryBloc, CategoryState>(
-                    builder: (context, state) {
-                      if (state is CategoryLoaded) {
-                        return Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: state.categories.map((cat) {
-                            final selected = _localFilter.categoryIds.contains(cat.id);
-                            return FilterChip(
-                              selected: selected,
-                              label: Text('${cat.icon} ${cat.name}', style: const TextStyle(fontSize: 13)),
-                              onSelected: (val) {
-                                setState(() {
-                                  final ids = Set<String>.from(_localFilter.categoryIds);
-                                  val ? ids.add(cat.id) : ids.remove(cat.id);
-                                  _localFilter = _localFilter.copyWith(categoryIds: ids);
-                                });
-                              },
-                            );
-                          }).toList(),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
+                  if (widget.expenseEntries != null)
+                    _buildCategoryChips(
+                      widget.expenseEntries!
+                          .where((e) =>
+                              !e.date.isBefore(_localFilter.startDate) &&
+                              !e.date.isAfter(_localFilter.endDate))
+                          .map((e) => (id: e.id, name: e.name, icon: e.icon))
+                          .toSet()
+                          .toList(),
+                    )
+                  else
+                    BlocBuilder<CategoryBloc, CategoryState>(
+                      builder: (context, state) {
+                        if (state is CategoryLoaded) {
+                          return _buildCategoryChips(state.categories
+                              .map((cat) => (id: cat.id, name: cat.name, icon: cat.icon))
+                              .toList());
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
                   const SizedBox(height: 24),
                   Text('Metodos de pago', style: Theme.of(context).textTheme.titleSmall),
                   const SizedBox(height: 8),

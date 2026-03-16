@@ -8,12 +8,37 @@ import 'package:control_gastos/features/expenses/domain/entities/expense.dart';
 import 'package:control_gastos/features/expenses/domain/entities/expense_filter.dart';
 import 'package:control_gastos/features/expenses/presentation/bloc/expense_bloc.dart';
 import 'package:control_gastos/features/expenses/presentation/widgets/expense_card.dart';
+import 'package:control_gastos/features/incomes/domain/entities/income.dart';
+import 'package:control_gastos/features/incomes/presentation/bloc/income_bloc.dart';
+import 'package:control_gastos/features/incomes/presentation/widgets/income_card.dart';
 import 'package:control_gastos/features/payment_methods/presentation/bloc/payment_method_bloc.dart';
 import 'package:control_gastos/shared/presentation/widgets/empty_state.dart';
 import 'package:control_gastos/shared/presentation/widgets/error_dialog.dart';
 import 'package:control_gastos/shared/presentation/widgets/filter_drawer.dart';
 import 'package:control_gastos/shared/presentation/widgets/month_navigator.dart';
 import 'package:control_gastos/shared/presentation/widgets/total_card.dart';
+
+// ─── Sealed union for merged transaction list ─────────────────────────────────
+
+sealed class _TxItem {
+  DateTime get date;
+}
+
+class _ExpenseTx extends _TxItem {
+  final Expense expense;
+  _ExpenseTx(this.expense);
+  @override
+  DateTime get date => expense.date;
+}
+
+class _IncomeTx extends _TxItem {
+  final Income income;
+  _IncomeTx(this.income);
+  @override
+  DateTime get date => income.date;
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 class ExpenseListPage extends StatefulWidget {
   const ExpenseListPage({super.key});
@@ -27,6 +52,7 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
   late final String _userEmail;
   late final String _userId;
   late ExpenseFilter _filter;
+  bool _speedDialOpen = false;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -37,34 +63,43 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
     _userEmail = authState is AuthAuthenticated ? authState.user.email : '';
     _userId = authState is AuthAuthenticated ? authState.user.id : '';
     _filter = ExpenseFilter.currentMonth();
-    _fetchExpenses();
-    _fetchFilterData();
+    _fetchAll();
   }
 
-  void _fetchExpenses() {
-    if (_userId.isNotEmpty) {
-      context.read<ExpenseBloc>().add(FetchExpensesEvent(_userId));
-    }
-  }
-
-  void _fetchFilterData() {
+  void _fetchAll() {
     if (_userId.isEmpty) return;
+    context.read<ExpenseBloc>().add(FetchExpensesEvent(_userId));
+    context.read<IncomeBloc>().add(FetchIncomesEvent(_userId));
     context.read<CategoryBloc>().add(FetchCategoriesEvent(_userId));
     context.read<PaymentMethodBloc>().add(FetchPaymentMethodsEvent(_userId));
   }
 
-  List<Expense> _applyFilter(List<Expense> expenses) {
+  List<Expense> _filterExpenses(List<Expense> expenses) {
     return expenses.where((e) {
-      if (e.date.isBefore(_filter.startDate) || e.date.isAfter(_filter.endDate)) return false;
-      if (_filter.categoryIds.isNotEmpty && !_filter.categoryIds.contains(e.categoryId)) return false;
-      if (_filter.paymentMethodIds.isNotEmpty && !_filter.paymentMethodIds.contains(e.paymentMethodId)) return false;
+      if (e.date.isBefore(_filter.startDate) ||
+          e.date.isAfter(_filter.endDate)) return false;
+      if (_filter.categoryIds.isNotEmpty &&
+          !_filter.categoryIds.contains(e.categoryId)) return false;
+      if (_filter.paymentMethodIds.isNotEmpty &&
+          !_filter.paymentMethodIds.contains(e.paymentMethodId)) return false;
+      return true;
+    }).toList();
+  }
+
+  List<Income> _filterIncomes(List<Income> incomes) {
+    return incomes.where((i) {
+      if (i.date.isBefore(_filter.startDate) ||
+          i.date.isAfter(_filter.endDate)) return false;
+      if (_filter.paymentMethodIds.isNotEmpty &&
+          !_filter.paymentMethodIds.contains(i.paymentMethodId)) return false;
       return true;
     }).toList();
   }
 
   void _changeMonth(int delta) {
     setState(() {
-      final newMonth = DateTime(_filter.startDate.year, _filter.startDate.month + delta, 1);
+      final newMonth =
+          DateTime(_filter.startDate.year, _filter.startDate.month + delta, 1);
       _filter = _filter.copyWith(
         startDate: newMonth,
         endDate: DateTime(newMonth.year, newMonth.month + 1, 0, 23, 59, 59),
@@ -73,9 +108,7 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
   }
 
   void _clearFilters() {
-    setState(() {
-      _filter = ExpenseFilter.currentMonth();
-    });
+    setState(() => _filter = ExpenseFilter.currentMonth());
   }
 
   @override
@@ -83,7 +116,7 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: const Text('Mis Gastos'),
+        title: const Text('Mis Finanzas'),
         actions: [
           FilterBadgeIcon(
             filter: _filter,
@@ -92,123 +125,341 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
         ],
       ),
       drawer: _AppDrawer(userName: _userName, userEmail: _userEmail),
-      endDrawer: FilterDrawer(
-        filter: _filter,
-        onFilterChanged: (f) => setState(() => _filter = f),
-        onClear: _clearFilters,
+      endDrawer: Builder(
+        builder: (context) {
+          final expState = context.watch<ExpenseBloc>().state;
+          final entries = expState is ExpenseLoaded
+              ? expState.expenses
+                  .map((e) => (
+                        id: e.categoryId,
+                        name: e.categoryName,
+                        icon: e.categoryIcon,
+                        date: e.date,
+                      ))
+                  .toList()
+              : null;
+          return FilterDrawer(
+            filter: _filter,
+            onFilterChanged: (f) => setState(() => _filter = f),
+            onClear: _clearFilters,
+            expenseEntries: entries,
+          );
+        },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
+      floatingActionButton: _SpeedDialFab(
+        isOpen: _speedDialOpen,
+        onToggle: () => setState(() => _speedDialOpen = !_speedDialOpen),
+        onExpense: () async {
+          setState(() => _speedDialOpen = false);
           await context.push('/add-expense');
-          _fetchExpenses();
+          _fetchAll();
         },
-        child: const Icon(Icons.add),
+        onIncome: () async {
+          setState(() => _speedDialOpen = false);
+          await context.push('/add-income');
+          _fetchAll();
+        },
       ),
-      body: BlocConsumer<ExpenseBloc, ExpenseState>(
-        listener: (context, state) {
-          if (state is ExpenseOperationSuccess) {
-            _fetchExpenses();
-          } else if (state is ExpenseError) {
-            ErrorDialog.show(context, message: state.message, onRetry: _fetchExpenses);
-          }
+      body: GestureDetector(
+        onTap: () {
+          if (_speedDialOpen) setState(() => _speedDialOpen = false);
         },
-        builder: (context, state) {
-          if (state is ExpenseLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (state is ExpenseLoaded) {
-            final filtered = _applyFilter(state.expenses);
-            final total = filtered.fold(0.0, (sum, e) => sum + e.amount);
+        child: BlocConsumer<ExpenseBloc, ExpenseState>(
+          listener: (context, state) {
+            if (state is ExpenseOperationSuccess) {
+              _fetchAll();
+            } else if (state is ExpenseError) {
+              ErrorDialog.show(context,
+                  message: state.message, onRetry: _fetchAll);
+            }
+          },
+          builder: (context, expenseState) {
+            return BlocConsumer<IncomeBloc, IncomeState>(
+              listener: (context, state) {
+                if (state is IncomeOperationSuccess) _fetchAll();
+              },
+              builder: (context, incomeState) {
+                if (expenseState is ExpenseLoading ||
+                    incomeState is IncomeLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-            return Column(
-              children: [
-                MonthNavigator(filter: _filter, onChangeMonth: _changeMonth),
-                if (_filter.hasExtraFilters)
-                  ActiveFilterChips(
-                    filter: _filter,
-                    onFilterChanged: (f) => setState(() => _filter = f),
-                  ),
-                TotalCard(total: total, isFiltered: _filter.hasExtraFilters),
-                if (filtered.isEmpty)
-                  const Expanded(
-                    child: EmptyState(
-                      icon: Icons.search_off,
-                      message: 'Sin gastos',
-                      subtitle: 'No hay gastos para este periodo',
+                final allExpenses = expenseState is ExpenseLoaded
+                    ? expenseState.expenses
+                    : <Expense>[];
+                final allIncomes = incomeState is IncomeLoaded
+                    ? incomeState.incomes
+                    : <Income>[];
+
+                final filteredExpenses = _filterExpenses(allExpenses);
+                final filteredIncomes = _filterIncomes(allIncomes);
+
+
+                final expenseTotal =
+                    filteredExpenses.fold(0.0, (s, e) => s + e.amount);
+                final incomeTotal =
+                    filteredIncomes.fold(0.0, (s, i) => s + i.amount);
+
+                final List<_TxItem> items = switch (_filter.transactionType) {
+                  TransactionType.expense =>
+                    filteredExpenses.map(_ExpenseTx.new).toList(),
+                  TransactionType.income =>
+                    filteredIncomes.map(_IncomeTx.new).toList(),
+                  TransactionType.all => [
+                      ...filteredExpenses.map(_ExpenseTx.new),
+                      ...filteredIncomes.map(_IncomeTx.new),
+                    ]..sort((a, b) => b.date.compareTo(a.date)),
+                };
+
+                return Column(
+                  children: [
+                    MonthNavigator(
+                        filter: _filter, onChangeMonth: _changeMonth),
+                    if (_filter.hasExtraFilters)
+                      ActiveFilterChips(
+                        filter: _filter,
+                        onFilterChanged: (f) => setState(() => _filter = f),
+                      ),
+                    TotalCard(
+                      expenseTotal: expenseTotal,
+                      incomeTotal: incomeTotal,
+                      transactionType: _filter.transactionType,
                     ),
-                  )
-                else
-                  Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: filtered.length,
-                      itemBuilder: (context, index) {
-                        final expense = filtered[index];
-                        return Dismissible(
-                          key: ValueKey(expense.id),
-                          direction: DismissDirection.endToStart,
-                          confirmDismiss: (_) => showDialog<bool>(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              title: const Text('Eliminar gasto'),
-                              content: Text('¿Eliminar "${expense.description}"?'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(ctx, false),
-                                  child: const Text('Cancelar'),
-                                ),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Theme.of(context).colorScheme.error,
-                                    foregroundColor: Theme.of(context).colorScheme.onError,
-                                  ),
-                                  onPressed: () => Navigator.pop(ctx, true),
-                                  child: const Text('Eliminar'),
-                                ),
-                              ],
-                            ),
+                    if (items.isEmpty)
+                      const Expanded(
+                        child: EmptyState(
+                          icon: Icons.search_off,
+                          message: 'Sin transacciones',
+                          subtitle: 'No hay registros para este periodo',
+                        ),
+                      )
+                    else
+                      Expanded(
+                        child: ListView.builder(
+                          padding: EdgeInsets.only(
+                            left: 16,
+                            right: 16,
+                            bottom: MediaQuery.of(context).padding.bottom + 88,
                           ),
-                          onDismissed: (_) {
-                            context.read<ExpenseBloc>().add(DeleteExpenseEvent(expense.id));
-                            if (expense.groupId != null) {
-                              context.read<GroupBloc>().add(DeleteGroupExpenseEvent(expense.id));
-                            }
+                          itemCount: items.length,
+                          itemBuilder: (context, index) {
+                            final item = items[index];
+                            return switch (item) {
+                              _ExpenseTx(:final expense) =>
+                                _buildExpenseDismissible(context, expense),
+                              _IncomeTx(:final income) =>
+                                _buildIncomeDismissible(context, income),
+                            };
                           },
-                          background: Container(
-                            alignment: Alignment.centerRight,
-                            padding: const EdgeInsets.only(right: 20),
-                            margin: const EdgeInsets.symmetric(vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.error,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(
-                              Icons.delete_outline,
-                              color: Theme.of(context).colorScheme.onError,
-                            ),
-                          ),
-                          child: ExpenseCard(
-                            expense: expense,
-                            onTap: () async {
-                              await context.push('/add-expense', extra: expense);
-                              _fetchExpenses();
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-              ],
+                        ),
+                      ),
+                  ],
+                );
+              },
             );
-          }
-          return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpenseDismissible(BuildContext context, Expense expense) {
+    return Dismissible(
+      key: ValueKey('exp_${expense.id}'),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (_) => showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Eliminar gasto'),
+          content: Text('¿Eliminar "${expense.description}"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Eliminar'),
+            ),
+          ],
+        ),
+      ),
+      onDismissed: (_) {
+        context.read<ExpenseBloc>().add(DeleteExpenseEvent(expense.id));
+        if (expense.groupId != null) {
+          context
+              .read<GroupBloc>()
+              .add(DeleteGroupExpenseEvent(expense.id));
+        }
+      },
+      background: _deleteBackground(context),
+      child: ExpenseCard(
+        expense: expense,
+        onTap: () async {
+          await context.push('/add-expense', extra: expense);
+          _fetchAll();
         },
       ),
     );
   }
+
+  Widget _buildIncomeDismissible(BuildContext context, Income income) {
+    return Dismissible(
+      key: ValueKey('inc_${income.id}'),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (_) => showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Eliminar ingreso'),
+          content: Text('¿Eliminar "${income.description}"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Eliminar'),
+            ),
+          ],
+        ),
+      ),
+      onDismissed: (_) {
+        context.read<IncomeBloc>().add(DeleteIncomeEvent(income.id));
+      },
+      background: _deleteBackground(context),
+      child: IncomeCard(
+        income: income,
+        onTap: () async {
+          await context.push('/add-income', extra: income);
+          _fetchAll();
+        },
+      ),
+    );
+  }
+
+  Widget _deleteBackground(BuildContext context) => Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.error,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(
+          Icons.delete_outline,
+          color: Theme.of(context).colorScheme.onError,
+        ),
+      );
 }
 
-// ─── App Drawer (navigation) ─────────────────────────────────────────────────
+// ─── Speed Dial FAB ───────────────────────────────────────────────────────────
+
+class _SpeedDialFab extends StatelessWidget {
+  final bool isOpen;
+  final VoidCallback onToggle;
+  final VoidCallback onExpense;
+  final VoidCallback onIncome;
+
+  const _SpeedDialFab({
+    required this.isOpen,
+    required this.onToggle,
+    required this.onExpense,
+    required this.onIncome,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (isOpen) ...[
+          _DialOption(
+            label: 'Ingreso',
+            icon: Icons.trending_up,
+            color: colorScheme.tertiary,
+            onColor: colorScheme.onTertiary,
+            onTap: onIncome,
+          ),
+          const SizedBox(height: 12),
+          _DialOption(
+            label: 'Gasto',
+            icon: Icons.trending_down,
+            color: colorScheme.error,
+            onColor: colorScheme.onError,
+            onTap: onExpense,
+          ),
+          const SizedBox(height: 12),
+        ],
+        FloatingActionButton(
+          onPressed: onToggle,
+          child: AnimatedRotation(
+            turns: isOpen ? 0.125 : 0,
+            duration: const Duration(milliseconds: 200),
+            child: const Icon(Icons.add),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DialOption extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final Color onColor;
+  final VoidCallback onTap;
+
+  const _DialOption({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Material(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(8),
+          elevation: 2,
+          child: Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Text(label,
+                style: Theme.of(context).textTheme.labelLarge),
+          ),
+        ),
+        const SizedBox(width: 8),
+        FloatingActionButton.small(
+          heroTag: label,
+          onPressed: onTap,
+          backgroundColor: color,
+          foregroundColor: onColor,
+          child: Icon(icon),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── App Drawer ───────────────────────────────────────────────────────────────
 
 class _AppDrawer extends StatelessWidget {
   final String userName;
@@ -254,7 +505,10 @@ class _AppDrawer extends StatelessWidget {
                 Text(
                   userEmail,
                   style: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.8),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.8),
                     fontSize: 12,
                   ),
                 ),
@@ -262,8 +516,8 @@ class _AppDrawer extends StatelessWidget {
             ),
           ),
           ListTile(
-            leading: const Icon(Icons.receipt_long_outlined),
-            title: const Text('Mis Gastos'),
+            leading: const Icon(Icons.account_balance_wallet_outlined),
+            title: const Text('Mis Finanzas'),
             selected: true,
             onTap: () => Navigator.pop(context),
           ),

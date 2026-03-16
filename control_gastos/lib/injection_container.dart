@@ -68,6 +68,16 @@ import 'package:control_gastos/features/groups/domain/usecases/update_group_cate
 import 'package:control_gastos/features/groups/presentation/bloc/group_bloc.dart';
 import 'package:control_gastos/features/groups/presentation/bloc/group_category_bloc.dart';
 
+import 'package:control_gastos/features/incomes/data/datasources/income_remote_datasource.dart';
+import 'package:control_gastos/features/incomes/data/repositories/income_repository_impl.dart';
+import 'package:control_gastos/features/incomes/domain/repositories/income_repository.dart';
+import 'package:control_gastos/features/incomes/domain/usecases/add_income_usecase.dart';
+import 'package:control_gastos/features/incomes/domain/usecases/delete_income_usecase.dart';
+import 'package:control_gastos/features/incomes/domain/usecases/get_group_incomes_usecase.dart';
+import 'package:control_gastos/features/incomes/domain/usecases/get_incomes_usecase.dart';
+import 'package:control_gastos/features/incomes/domain/usecases/update_income_usecase.dart';
+import 'package:control_gastos/features/incomes/presentation/bloc/income_bloc.dart';
+
 final getIt = GetIt.instance;
 
 Future<void> setupLocator() async {
@@ -255,6 +265,34 @@ Future<void> setupLocator() async {
       addGroupCategoryUseCase: getIt(),
       updateGroupCategoryUseCase: getIt(),
       deleteGroupCategoryUseCase: getIt(),
+    ),
+  );
+
+  // Income datasource
+  getIt.registerSingleton<IncomeRemoteDataSource>(
+    IncomeRemoteDataSourceImpl(getIt()),
+  );
+
+  // Income repository
+  getIt.registerSingleton<IncomeRepository>(
+    IncomeRepositoryImpl(getIt()),
+  );
+
+  // Income usecases
+  getIt.registerSingleton<GetIncomesUseCase>(GetIncomesUseCase(getIt()));
+  getIt.registerSingleton<GetGroupIncomesUseCase>(GetGroupIncomesUseCase(getIt()));
+  getIt.registerSingleton<AddIncomeUseCase>(AddIncomeUseCase(getIt()));
+  getIt.registerSingleton<UpdateIncomeUseCase>(UpdateIncomeUseCase(getIt()));
+  getIt.registerSingleton<DeleteIncomeUseCase>(DeleteIncomeUseCase(getIt()));
+
+  // Income BLoC
+  getIt.registerFactory<IncomeBloc>(
+    () => IncomeBloc(
+      getIncomesUseCase: getIt(),
+      getGroupIncomesUseCase: getIt(),
+      addIncomeUseCase: getIt(),
+      updateIncomeUseCase: getIt(),
+      deleteIncomeUseCase: getIt(),
     ),
   );
 }

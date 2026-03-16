@@ -13,6 +13,9 @@ import 'package:control_gastos/features/groups/presentation/pages/group_list_pag
 import 'package:control_gastos/features/expenses/domain/entities/expense.dart';
 import 'package:control_gastos/features/groups/presentation/pages/group_detail_page.dart';
 import 'package:control_gastos/features/groups/presentation/bloc/group_category_bloc.dart';
+import 'package:control_gastos/features/incomes/domain/entities/income.dart';
+import 'package:control_gastos/features/incomes/presentation/bloc/income_bloc.dart';
+import 'package:control_gastos/features/incomes/presentation/pages/add_income_page.dart';
 import 'package:control_gastos/features/payment_methods/presentation/bloc/payment_method_bloc.dart';
 import 'package:control_gastos/injection_container.dart';
 
@@ -45,11 +48,16 @@ GoRouter createRouter(AuthBloc authBloc) {
       GoRoute(path: '/categories', builder: (_, __) => const CategoryManagePage()),
       GoRoute(path: '/groups', builder: (_, __) => const GroupListPage()),
       GoRoute(
+        path: '/add-income',
+        builder: (_, state) => AddIncomePage(existingIncome: state.extra as Income?),
+      ),
+      GoRoute(
         path: '/groups/:id',
         builder: (_, state) => MultiBlocProvider(
           providers: [
             BlocProvider(create: (_) => getIt<GroupCategoryBloc>()),
             BlocProvider(create: (_) => getIt<PaymentMethodBloc>()),
+            BlocProvider(create: (_) => getIt<IncomeBloc>()),
           ],
           child: GroupDetailPage(
             groupId: state.pathParameters['id']!,

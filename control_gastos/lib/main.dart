@@ -9,6 +9,7 @@ import 'package:control_gastos/features/categories/presentation/bloc/category_bl
 import 'package:control_gastos/features/expenses/presentation/bloc/expense_bloc.dart';
 import 'package:control_gastos/features/payment_methods/presentation/bloc/payment_method_bloc.dart';
 import 'package:control_gastos/features/groups/presentation/bloc/group_bloc.dart';
+import 'package:control_gastos/features/incomes/presentation/bloc/income_bloc.dart';
 import 'package:control_gastos/injection_container.dart';
 import 'package:control_gastos/router/app_router.dart';
 import 'firebase_options.dart';
@@ -33,6 +34,7 @@ class ControlGastosApp extends StatelessWidget {
         BlocProvider<PaymentMethodBloc>(create: (_) => getIt<PaymentMethodBloc>()),
         BlocProvider<AnalyticsBloc>(create: (_) => getIt<AnalyticsBloc>()),
         BlocProvider<GroupBloc>(create: (_) => getIt<GroupBloc>()),
+        BlocProvider<IncomeBloc>(create: (_) => getIt<IncomeBloc>()),
       ],
       child: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, authState) {

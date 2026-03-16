@@ -1,14 +1,18 @@
+enum TransactionType { all, expense, income }
+
 class ExpenseFilter {
   final DateTime startDate;
   final DateTime endDate;
   final Set<String> categoryIds;
   final Set<String> paymentMethodIds;
+  final TransactionType transactionType;
 
   ExpenseFilter({
     required this.startDate,
     required this.endDate,
     this.categoryIds = const {},
     this.paymentMethodIds = const {},
+    this.transactionType = TransactionType.all,
   });
 
   factory ExpenseFilter.currentMonth() {
@@ -24,21 +28,27 @@ class ExpenseFilter {
     DateTime? endDate,
     Set<String>? categoryIds,
     Set<String>? paymentMethodIds,
+    TransactionType? transactionType,
   }) {
     return ExpenseFilter(
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       categoryIds: categoryIds ?? this.categoryIds,
       paymentMethodIds: paymentMethodIds ?? this.paymentMethodIds,
+      transactionType: transactionType ?? this.transactionType,
     );
   }
 
-  bool get hasExtraFilters => categoryIds.isNotEmpty || paymentMethodIds.isNotEmpty;
+  bool get hasExtraFilters =>
+      categoryIds.isNotEmpty ||
+      paymentMethodIds.isNotEmpty ||
+      transactionType != TransactionType.all;
 
   int get activeFilterCount {
     int count = 1; // date range always counts
     if (categoryIds.isNotEmpty) count++;
     if (paymentMethodIds.isNotEmpty) count++;
+    if (transactionType != TransactionType.all) count++;
     return count;
   }
 
@@ -57,6 +67,7 @@ class ExpenseFilter {
         endDate.month == def.endDate.month &&
         endDate.day == def.endDate.day &&
         categoryIds.isEmpty &&
-        paymentMethodIds.isEmpty;
+        paymentMethodIds.isEmpty &&
+        transactionType == TransactionType.all;
   }
 }
