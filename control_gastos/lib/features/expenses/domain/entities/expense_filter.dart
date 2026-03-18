@@ -60,6 +60,22 @@ class ExpenseFilter {
     return '${months[startDate.month - 1]} ${startDate.year}';
   }
 
+  bool get isFullMonth {
+    if (startDate.day != 1) return false;
+    final lastDay = DateTime(startDate.year, startDate.month + 1, 0);
+    return endDate.day == lastDay.day &&
+        endDate.month == startDate.month &&
+        endDate.year == startDate.year;
+  }
+
+  /// Muestra el mes si es un mes completo, o el rango de fechas si es personalizado.
+  String get displayLabel {
+    if (isFullMonth) return monthLabel;
+    String fmt(DateTime d) =>
+        '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+    return '${fmt(startDate)} – ${fmt(endDate)}';
+  }
+
   bool get isDefaultMonthFilter {
     final def = ExpenseFilter.currentMonth();
     return startDate == def.startDate &&

@@ -11,6 +11,7 @@ abstract class GroupRemoteDataSource {
   Future<void> joinGroup(String groupId, String userId);
   Future<List<GroupExpenseModel>> getGroupExpenses(String groupId);
   Future<void> addGroupExpense(GroupExpenseModel expense);
+  Future<void> updateGroupExpense(GroupExpenseModel expense);
   Future<void> deleteGroupExpense(String expenseId);
   Future<void> deleteGroup(String groupId);
   // Group categories
@@ -94,6 +95,15 @@ class GroupRemoteDataSourceImpl implements GroupRemoteDataSource {
   Future<void> addGroupExpense(GroupExpenseModel expense) async {
     try {
       await _groupExpenses.doc(expense.id).set(expense.toJson());
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  @override
+  Future<void> updateGroupExpense(GroupExpenseModel expense) async {
+    try {
+      await _groupExpenses.doc(expense.id).update(expense.toJson());
     } catch (e) {
       throw ServerException(e.toString());
     }

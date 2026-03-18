@@ -16,9 +16,19 @@ class PaymentMethodLoading extends PaymentMethodState {
 
 class PaymentMethodLoaded extends PaymentMethodState {
   final List<PaymentMethod> paymentMethods;
-  const PaymentMethodLoaded(this.paymentMethods);
+  /// currentBalance por paymentMethodId. Solo para métodos con hasBalance e initialBalance.
+  final Map<String, double> balances;
+  /// cupo disponible por paymentMethodId. Solo para tarjetas de crédito con creditLimit.
+  final Map<String, double> availableCredits;
+
+  const PaymentMethodLoaded(
+    this.paymentMethods, {
+    this.balances = const {},
+    this.availableCredits = const {},
+  });
+
   @override
-  List<Object> get props => [paymentMethods];
+  List<Object?> get props => [paymentMethods, balances, availableCredits];
 }
 
 class PaymentMethodOperationSuccess extends PaymentMethodState {

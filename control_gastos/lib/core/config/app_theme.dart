@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:control_gastos/core/config/app_colors.dart';
 
 class AppTheme {
   AppTheme._();
@@ -42,6 +43,7 @@ class AppTheme {
             ),
           ),
         ),
+        extensions: const [AppColors.light],
       );
 
   static ThemeData get darkTheme => ThemeData(
@@ -77,5 +79,6 @@ class AppTheme {
             ),
           ),
         ),
+        extensions: const [AppColors.dark],
       );
 }

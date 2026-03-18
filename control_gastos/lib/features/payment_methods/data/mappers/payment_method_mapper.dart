@@ -11,6 +11,9 @@ class PaymentMethodMapper {
         icon: model.icon,
         type: model.type,
         isDefault: model.isDefault,
+        initialBalance: model.initialBalance,
+        balanceStartDate: model.balanceStartDate,
+        creditLimit: model.creditLimit,
       );
 
   static PaymentMethodModel toModel(PaymentMethod entity) => PaymentMethodModel(
@@ -20,5 +23,8 @@ class PaymentMethodMapper {
         icon: entity.icon,
         type: entity.type,
         isDefault: entity.isDefault,
+        initialBalance: entity.initialBalance,
+        balanceStartDate: entity.balanceStartDate,
+        creditLimit: entity.creditLimit,
       );
 }

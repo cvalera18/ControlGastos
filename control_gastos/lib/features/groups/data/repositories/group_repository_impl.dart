@@ -76,6 +76,17 @@ class GroupRepositoryImpl implements GroupRepository {
   }
 
   @override
+  Future<Either<Failure, void>> updateGroupExpense(GroupExpense expense) async {
+    try {
+      final model = GroupExpenseMapper.toModel(expense);
+      await remote.updateGroupExpense(model);
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> deleteGroupExpense(String expenseId) async {
     try {
       await remote.deleteGroupExpense(expenseId);

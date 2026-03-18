@@ -55,6 +55,7 @@ import 'package:control_gastos/features/groups/domain/repositories/group_categor
 import 'package:control_gastos/features/groups/domain/repositories/group_repository.dart';
 import 'package:control_gastos/features/groups/domain/usecases/add_group_category_usecase.dart';
 import 'package:control_gastos/features/groups/domain/usecases/add_group_expense_usecase.dart';
+import 'package:control_gastos/features/groups/domain/usecases/update_group_expense_usecase.dart';
 import 'package:control_gastos/features/groups/domain/usecases/create_group_usecase.dart';
 import 'package:control_gastos/features/groups/domain/usecases/delete_group_category_usecase.dart';
 import 'package:control_gastos/features/groups/domain/usecases/delete_group_expense_usecase.dart';
@@ -205,6 +206,8 @@ Future<void> setupLocator() async {
       addPaymentMethodUseCase: getIt(),
       updatePaymentMethodUseCase: getIt(),
       deletePaymentMethodUseCase: getIt(),
+      getExpensesUseCase: getIt(),
+      getIncomesUseCase: getIt(),
     ),
   );
 
@@ -233,6 +236,7 @@ Future<void> setupLocator() async {
   getIt.registerSingleton<JoinGroupUseCase>(JoinGroupUseCase(getIt()));
   getIt.registerSingleton<GetGroupExpensesUseCase>(GetGroupExpensesUseCase(getIt()));
   getIt.registerSingleton<AddGroupExpenseUseCase>(AddGroupExpenseUseCase(getIt()));
+  getIt.registerSingleton<UpdateGroupExpenseUseCase>(UpdateGroupExpenseUseCase(getIt()));
   getIt.registerSingleton<DeleteGroupExpenseUseCase>(DeleteGroupExpenseUseCase(getIt()));
   getIt.registerSingleton<DeleteGroupUseCase>(DeleteGroupUseCase(getIt()));
   getIt.registerSingleton<SeedDefaultGroupCategoriesUseCase>(
@@ -252,6 +256,7 @@ Future<void> setupLocator() async {
       joinGroupUseCase: getIt(),
       getGroupExpensesUseCase: getIt(),
       addGroupExpenseUseCase: getIt(),
+      updateGroupExpenseUseCase: getIt(),
       deleteGroupExpenseUseCase: getIt(),
       deleteGroupUseCase: getIt(),
       seedDefaultGroupCategoriesUseCase: getIt(),

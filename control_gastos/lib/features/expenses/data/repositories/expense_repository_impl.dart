@@ -17,7 +17,9 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
   Future<Either<Failure, List<Expense>>> getExpenses(String userId) async {
     try {
       final models = await remote.getExpenses(userId);
-      await local.saveExpenses(models);
+      try {
+        await local.saveExpenses(models); // best-effort: no bloqueamos si falla caché
+      } catch (_) {}
       return Right(models.map(ExpenseMapper.toDomain).toList());
     } on ServerException {
       try {

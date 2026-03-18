@@ -17,6 +17,7 @@ import 'package:control_gastos/shared/presentation/widgets/error_dialog.dart';
 import 'package:control_gastos/shared/presentation/widgets/filter_drawer.dart';
 import 'package:control_gastos/shared/presentation/widgets/month_navigator.dart';
 import 'package:control_gastos/shared/presentation/widgets/total_card.dart';
+import 'package:control_gastos/core/extensions/context_extensions.dart';
 
 // ─── Sealed union for merged transaction list ─────────────────────────────────
 
@@ -379,6 +380,7 @@ class _SpeedDialFab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final appColors = context.appColors;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -388,8 +390,8 @@ class _SpeedDialFab extends StatelessWidget {
           _DialOption(
             label: 'Ingreso',
             icon: Icons.trending_up,
-            color: colorScheme.tertiary,
-            onColor: colorScheme.onTertiary,
+            color: appColors.incomeColor,
+            onColor: Colors.white,
             onTap: onIncome,
           ),
           const SizedBox(height: 12),

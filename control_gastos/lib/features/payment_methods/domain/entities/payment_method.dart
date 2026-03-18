@@ -8,6 +8,12 @@ class PaymentMethod extends Equatable {
   final String icon;
   final PaymentMethodType type;
   final bool isDefault;
+  /// Saldo inicial para cuentas (checking, savings, vista, digital, cash).
+  final double? initialBalance;
+  /// Fecha interna: cuándo se registró el initialBalance. Gestionada automáticamente.
+  final DateTime? balanceStartDate;
+  /// Cupo disponible para tarjetas de crédito.
+  final double? creditLimit;
 
   const PaymentMethod({
     required this.id,
@@ -16,6 +22,9 @@ class PaymentMethod extends Equatable {
     required this.icon,
     this.type = PaymentMethodType.other,
     this.isDefault = false,
+    this.initialBalance,
+    this.balanceStartDate,
+    this.creditLimit,
   });
 
   PaymentMethod copyWith({
@@ -25,6 +34,9 @@ class PaymentMethod extends Equatable {
     String? icon,
     PaymentMethodType? type,
     bool? isDefault,
+    double? initialBalance,
+    DateTime? balanceStartDate,
+    double? creditLimit,
   }) {
     return PaymentMethod(
       id: id ?? this.id,
@@ -33,9 +45,12 @@ class PaymentMethod extends Equatable {
       icon: icon ?? this.icon,
       type: type ?? this.type,
       isDefault: isDefault ?? this.isDefault,
+      initialBalance: initialBalance ?? this.initialBalance,
+      balanceStartDate: balanceStartDate ?? this.balanceStartDate,
+      creditLimit: creditLimit ?? this.creditLimit,
     );
   }
 
   @override
-  List<Object> get props => [id, userId, name, icon, type, isDefault];
+  List<Object?> get props => [id, userId, name, icon, type, isDefault, initialBalance, balanceStartDate, creditLimit];
 }

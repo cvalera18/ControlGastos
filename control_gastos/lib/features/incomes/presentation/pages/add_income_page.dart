@@ -15,11 +15,13 @@ import 'package:control_gastos/features/payment_methods/presentation/bloc/paymen
 class AddIncomePage extends StatefulWidget {
   final Income? existingIncome;
   final String? preselectedGroupId;
+  final String? prefillPaymentMethodId;
 
   const AddIncomePage({
     super.key,
     this.existingIncome,
     this.preselectedGroupId,
+    this.prefillPaymentMethodId,
   });
 
   @override
@@ -50,6 +52,8 @@ class _AddIncomePageState extends State<AddIncomePage> {
       _notesController.text = i.notes ?? '';
       _selectedDate = i.date;
       _prefillMethodId = i.paymentMethodId;
+    } else if (widget.prefillPaymentMethodId != null) {
+      _prefillMethodId = widget.prefillPaymentMethodId;
     }
 
     final authState = context.read<AuthBloc>().state;

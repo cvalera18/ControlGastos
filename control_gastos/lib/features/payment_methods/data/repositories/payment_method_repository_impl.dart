@@ -17,7 +17,9 @@ class PaymentMethodRepositoryImpl implements PaymentMethodRepository {
   Future<Either<Failure, List<PaymentMethod>>> getPaymentMethods(String userId) async {
     try {
       final models = await remote.getPaymentMethods(userId);
-      await local.savePaymentMethods(models);
+      try {
+        await local.savePaymentMethods(models); // best-effort: no bloqueamos si falla caché
+      } catch (_) {}
       return Right(models.map(PaymentMethodMapper.toDomain).toList());
     } on ServerException {
       try {

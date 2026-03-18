@@ -16,7 +16,9 @@ import 'package:control_gastos/features/groups/presentation/bloc/group_category_
 import 'package:control_gastos/features/incomes/domain/entities/income.dart';
 import 'package:control_gastos/features/incomes/presentation/bloc/income_bloc.dart';
 import 'package:control_gastos/features/incomes/presentation/pages/add_income_page.dart';
+import 'package:control_gastos/features/payment_methods/domain/entities/payment_method.dart';
 import 'package:control_gastos/features/payment_methods/presentation/bloc/payment_method_bloc.dart';
+import 'package:control_gastos/features/payment_methods/presentation/pages/payment_method_detail_page.dart';
 import 'package:control_gastos/injection_container.dart';
 
 GoRouter createRouter(AuthBloc authBloc) {
@@ -38,18 +40,36 @@ GoRouter createRouter(AuthBloc authBloc) {
       GoRoute(path: '/home', builder: (_, __) => const ExpenseListPage()),
       GoRoute(
         path: '/add-expense',
-        builder: (_, state) => BlocProvider(
-          create: (_) => getIt<GroupCategoryBloc>(),
-          child: AddExpensePage(existingExpense: state.extra as Expense?),
-        ),
+        builder: (_, state) {
+          final extra = state.extra;
+          return BlocProvider(
+            create: (_) => getIt<GroupCategoryBloc>(),
+            child: AddExpensePage(
+              existingExpense: extra is Expense ? extra : null,
+              prefillPaymentMethodId: extra is String ? extra : null,
+            ),
+          );
+        },
       ),
       GoRoute(path: '/analytics', builder: (_, __) => const AnalyticsPage()),
       GoRoute(path: '/payment-methods', builder: (_, __) => const PaymentMethodPage()),
+      GoRoute(
+        path: '/payment-method-detail',
+        builder: (_, state) => PaymentMethodDetailPage(
+          method: state.extra as PaymentMethod,
+        ),
+      ),
       GoRoute(path: '/categories', builder: (_, __) => const CategoryManagePage()),
       GoRoute(path: '/groups', builder: (_, __) => const GroupListPage()),
       GoRoute(
         path: '/add-income',
-        builder: (_, state) => AddIncomePage(existingIncome: state.extra as Income?),
+        builder: (_, state) {
+          final extra = state.extra;
+          return AddIncomePage(
+            existingIncome: extra is Income ? extra : null,
+            prefillPaymentMethodId: extra is String ? extra : null,
+          );
+        },
       ),
       GoRoute(
         path: '/groups/:id',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:control_gastos/core/config/app_colors.dart';
 
 extension BuildContextExtensions on BuildContext {
   ThemeData get theme => Theme.of(this);
@@ -9,6 +10,7 @@ extension BuildContextExtensions on BuildContext {
   double get screenWidth => MediaQuery.of(this).size.width;
   double get screenHeight => MediaQuery.of(this).size.height;
   bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;
+  AppColors get appColors => Theme.of(this).extension<AppColors>() ?? AppColors.light;
 
   void showSnackBar(String message, {bool isError = false}) {
     ScaffoldMessenger.of(this).showSnackBar(

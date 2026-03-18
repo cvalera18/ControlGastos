@@ -23,7 +23,7 @@ class MonthNavigator extends StatelessWidget {
             onPressed: () => onChangeMonth(-1),
           ),
           Text(
-            filter.monthLabel,
+            filter.displayLabel,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),

@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'package:control_gastos/features/groups/domain/entities/group.dart';
 import 'package:control_gastos/features/groups/domain/entities/group_expense.dart';
 import 'package:control_gastos/features/groups/domain/usecases/add_group_expense_usecase.dart';
+import 'package:control_gastos/features/groups/domain/usecases/update_group_expense_usecase.dart';
 import 'package:control_gastos/features/groups/domain/usecases/create_group_usecase.dart';
 import 'package:control_gastos/features/groups/domain/usecases/delete_group_expense_usecase.dart';
 import 'package:control_gastos/features/groups/domain/usecases/delete_group_usecase.dart';
@@ -20,6 +21,7 @@ class GroupBloc extends Bloc<GroupEvent, GroupState> {
   final JoinGroupUseCase joinGroupUseCase;
   final GetGroupExpensesUseCase getGroupExpensesUseCase;
   final AddGroupExpenseUseCase addGroupExpenseUseCase;
+  final UpdateGroupExpenseUseCase updateGroupExpenseUseCase;
   final DeleteGroupExpenseUseCase deleteGroupExpenseUseCase;
   final DeleteGroupUseCase deleteGroupUseCase;
   final SeedDefaultGroupCategoriesUseCase seedDefaultGroupCategoriesUseCase;
@@ -30,6 +32,7 @@ class GroupBloc extends Bloc<GroupEvent, GroupState> {
     required this.joinGroupUseCase,
     required this.getGroupExpensesUseCase,
     required this.addGroupExpenseUseCase,
+    required this.updateGroupExpenseUseCase,
     required this.deleteGroupExpenseUseCase,
     required this.deleteGroupUseCase,
     required this.seedDefaultGroupCategoriesUseCase,
@@ -39,6 +42,7 @@ class GroupBloc extends Bloc<GroupEvent, GroupState> {
     on<JoinGroupEvent>(_onJoinGroup);
     on<FetchGroupExpensesEvent>(_onFetchGroupExpenses);
     on<AddGroupExpenseEvent>(_onAddGroupExpense);
+    on<UpdateGroupExpenseEvent>(_onUpdateGroupExpense);
     on<DeleteGroupExpenseEvent>(_onDeleteGroupExpense);
     on<DeleteGroupEvent>(_onDeleteGroup);
   }
@@ -91,6 +95,14 @@ class GroupBloc extends Bloc<GroupEvent, GroupState> {
     result.fold(
       (failure) => emit(GroupError(failure.message)),
       (_) => emit(const GroupOperationSuccess('Gasto agregado correctamente')),
+    );
+  }
+
+  Future<void> _onUpdateGroupExpense(UpdateGroupExpenseEvent event, Emitter<GroupState> emit) async {
+    final result = await updateGroupExpenseUseCase(event.expense);
+    result.fold(
+      (failure) => emit(GroupError(failure.message)),
+      (_) => emit(const GroupOperationSuccess('Gasto actualizado correctamente')),
     );
   }
 

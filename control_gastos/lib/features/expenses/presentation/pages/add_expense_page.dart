@@ -20,8 +20,9 @@ import 'package:control_gastos/features/payment_methods/presentation/bloc/paymen
 
 class AddExpensePage extends StatefulWidget {
   final Expense? existingExpense;
+  final String? prefillPaymentMethodId;
 
-  const AddExpensePage({super.key, this.existingExpense});
+  const AddExpensePage({super.key, this.existingExpense, this.prefillPaymentMethodId});
 
   @override
   State<AddExpensePage> createState() => _AddExpensePageState();
@@ -43,7 +44,9 @@ class _AddExpensePageState extends State<AddExpensePage> {
   Group? _selectedGroup;
 
   // Pre-fill IDs for edit mode
-  String? _prefillCategoryId;
+  String? _prefillCategoryId;       // solo para gastos personales
+  String? _prefillGroupId;          // si el gasto es grupal
+  String? _prefillGroupCategoryId;  // categoría del grupo a pre-seleccionar
   String? _prefillMethodId;
 
   bool get _isEditMode => widget.existingExpense != null;
@@ -58,17 +61,24 @@ class _AddExpensePageState extends State<AddExpensePage> {
       _amountController.text = e.amount.toStringAsFixed(2);
       _notesController.text = e.notes ?? '';
       _selectedDate = e.date;
-      _prefillCategoryId = e.categoryId;
       _prefillMethodId = e.paymentMethodId;
+      if (e.groupId != null) {
+        _prefillGroupId = e.groupId;
+        _prefillGroupCategoryId = e.categoryId;
+      } else {
+        _prefillCategoryId = e.categoryId;
+      }
+    }
+
+    if (!_isEditMode && widget.prefillPaymentMethodId != null) {
+      _prefillMethodId = widget.prefillPaymentMethodId;
     }
 
     final authState = context.read<AuthBloc>().state;
     if (authState is AuthAuthenticated) {
       context.read<CategoryBloc>().add(FetchCategoriesEvent(authState.user.id));
       context.read<PaymentMethodBloc>().add(FetchPaymentMethodsEvent(authState.user.id));
-      if (!_isEditMode) {
-        context.read<GroupBloc>().add(FetchGroupsEvent(authState.user.id));
-      }
+      context.read<GroupBloc>().add(FetchGroupsEvent(authState.user.id));
     }
   }
 
@@ -136,7 +146,8 @@ class _AddExpensePageState extends State<AddExpensePage> {
     }
 
     if (_isEditMode) {
-      final updated = widget.existingExpense!.copyWith(
+      final existing = widget.existingExpense!;
+      final updated = existing.copyWith(
         amount: amount,
         description: description,
         categoryId: categoryId,
@@ -150,6 +161,28 @@ class _AddExpensePageState extends State<AddExpensePage> {
         updatedAt: now,
       );
       context.read<ExpenseBloc>().add(UpdateExpenseEvent(updated));
+
+      // Si es un gasto grupal, sincronizar el documento de grupo con el mismo ID
+      if (existing.groupId != null) {
+        final updatedGroupExpense = GroupExpense(
+          id: existing.id,
+          groupId: existing.groupId!,
+          userId: authState.user.id,
+          userName: authState.user.name,
+          amount: amount,
+          description: description,
+          categoryId: categoryId,
+          categoryName: categoryName,
+          categoryIcon: categoryIcon,
+          categoryColor: categoryColor,
+          paymentMethodId: _selectedPaymentMethod!.id,
+          paymentMethodName: _selectedPaymentMethod!.name,
+          date: _selectedDate,
+          notes: notes,
+          createdAt: existing.createdAt,
+        );
+        context.read<GroupBloc>().add(UpdateGroupExpenseEvent(updatedGroupExpense));
+      }
     } else {
       // Usar mismo ID para personal y grupo (facilita el borrado en cascada)
       final sharedId = const Uuid().v4();
@@ -234,45 +267,61 @@ class _AddExpensePageState extends State<AddExpensePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ── Grupo (opcional, solo en creación) ──────────────────────
-                if (!_isEditMode) ...[
-                  BlocBuilder<GroupBloc, GroupState>(
-                    builder: (context, state) {
-                      if (state is GroupsLoaded && state.groups.isNotEmpty) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Grupo (opcional)',
-                                style: TextStyle(fontWeight: FontWeight.w500)),
-                            const SizedBox(height: 8),
-                            SizedBox(
-                              height: 48,
-                              child: ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: state.groups.length,
-                                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                                itemBuilder: (context, index) {
-                                  final group = state.groups[index];
-                                  final isSelected = _selectedGroup?.id == group.id;
-                                  return FilterChip(
-                                    avatar: const Icon(Icons.group, size: 16),
-                                    label: Text(group.name),
-                                    selected: isSelected,
-                                    onSelected: (_) => _onGroupSelected(
-                                      isSelected ? null : group,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-                        );
+                // ── Grupo (opcional en creación; solo lectura en edición grupal) ──
+                BlocBuilder<GroupBloc, GroupState>(
+                  builder: (context, state) {
+                    if (state is GroupsLoaded && state.groups.isNotEmpty) {
+                      // Auto-seleccionar el grupo al editar un gasto grupal
+                      if (_prefillGroupId != null && _selectedGroup == null) {
+                        final match = state.groups
+                            .where((g) => g.id == _prefillGroupId)
+                            .firstOrNull;
+                        if (match != null) {
+                          WidgetsBinding.instance.addPostFrameCallback(
+                            (_) => _onGroupSelected(match),
+                          );
+                        }
                       }
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                ],
+
+                      final isGroupLocked = _isEditMode && _prefillGroupId != null;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isGroupLocked ? 'Grupo' : 'Grupo (opcional)',
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 48,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: state.groups.length,
+                              separatorBuilder: (_, i) => const SizedBox(width: 8),
+                              itemBuilder: (context, index) {
+                                final group = state.groups[index];
+                                final isSelected = _selectedGroup?.id == group.id;
+                                return FilterChip(
+                                  avatar: const Icon(Icons.group, size: 16),
+                                  label: Text(group.name),
+                                  selected: isSelected,
+                                  // En edición grupal los chips son solo lectura
+                                  onSelected: isGroupLocked
+                                      ? null
+                                      : (_) => _onGroupSelected(
+                                            isSelected ? null : group,
+                                          ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
 
                 // ── Monto ────────────────────────────────────────────────────
                 TextFormField(
@@ -323,6 +372,19 @@ class _AddExpensePageState extends State<AddExpensePage> {
                         return const LinearProgressIndicator();
                       }
                       if (state is GroupCategoryLoaded) {
+                        // Auto-seleccionar categoría al editar gasto grupal
+                        if (_selectedGroupCategory == null &&
+                            _prefillGroupCategoryId != null) {
+                          final match = state.categories
+                              .where((c) => c.id == _prefillGroupCategoryId)
+                              .firstOrNull;
+                          if (match != null) {
+                            WidgetsBinding.instance.addPostFrameCallback(
+                              (_) => setState(() => _selectedGroupCategory = match),
+                            );
+                          }
+                        }
+
                         if (state.categories.isEmpty) {
                           return const Text(
                             'Este grupo no tiene categorías. Crea una desde el detalle del grupo.',

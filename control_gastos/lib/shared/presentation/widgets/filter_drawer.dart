@@ -126,6 +126,10 @@ class FilterDrawer extends StatefulWidget {
   /// Cuando se pasa, las categorías se derivan de estas entradas filtrando
   /// por el rango de fechas local (en tiempo real al cambiar la fecha).
   final List<ExpenseCategoryEntry>? expenseEntries;
+  /// Oculta la sección de métodos de pago (útil cuando el método ya está fijo).
+  final bool showPaymentMethodFilter;
+  /// Oculta la sección de rango de fechas (útil cuando la fecha se maneja externamente).
+  final bool showDateRange;
 
   const FilterDrawer({
     super.key,
@@ -133,6 +137,8 @@ class FilterDrawer extends StatefulWidget {
     required this.onFilterChanged,
     required this.onClear,
     this.expenseEntries,
+    this.showPaymentMethodFilter = true,
+    this.showDateRange = true,
   });
 
   @override
@@ -155,19 +161,29 @@ class _FilterDrawerState extends State<FilterDrawer> {
   }
 
   Widget _buildCategoryChips(List<CategoryOption> categories) {
+    // Deduplicate by name: primer ícono encontrado gana, se reúnen todos los IDs
+    final Map<String, String> nameToIcon = {};
+    final Map<String, Set<String>> nameToIds = {};
+    for (final cat in categories) {
+      nameToIds.putIfAbsent(cat.name, () => {}).add(cat.id);
+      nameToIcon.putIfAbsent(cat.name, () => cat.icon);
+    }
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: categories.map((cat) {
-        final selected = _localFilter.categoryIds.contains(cat.id);
+      children: nameToIds.entries.map((entry) {
+        final ids = entry.value;
+        final icon = nameToIcon[entry.key]!;
+        final isSelected = ids.any(_localFilter.categoryIds.contains);
         return FilterChip(
-          selected: selected,
-          label: Text('${cat.icon} ${cat.name}', style: const TextStyle(fontSize: 13)),
+          selected: isSelected,
+          label: Text('$icon ${entry.key}', style: const TextStyle(fontSize: 13)),
           onSelected: (val) {
             setState(() {
-              final ids = Set<String>.from(_localFilter.categoryIds);
-              val ? ids.add(cat.id) : ids.remove(cat.id);
-              _localFilter = _localFilter.copyWith(categoryIds: ids);
+              final currentIds = Set<String>.from(_localFilter.categoryIds);
+              val ? currentIds.addAll(ids) : currentIds.removeAll(ids);
+              _localFilter = _localFilter.copyWith(categoryIds: currentIds);
             });
           },
         );
@@ -239,17 +255,19 @@ class _FilterDrawerState extends State<FilterDrawer> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  Text('Rango de fechas', style: Theme.of(context).textTheme.titleSmall),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: _pickDateRange,
-                    icon: const Icon(Icons.date_range, size: 18),
-                    label: Text(
-                      '${_formatDate(_localFilter.startDate)} - ${_formatDate(_localFilter.endDate)}',
-                      style: const TextStyle(fontSize: 13),
+                  if (widget.showDateRange) ...[
+                    Text('Rango de fechas', style: Theme.of(context).textTheme.titleSmall),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: _pickDateRange,
+                      icon: const Icon(Icons.date_range, size: 18),
+                      label: Text(
+                        '${_formatDate(_localFilter.startDate)} - ${_formatDate(_localFilter.endDate)}',
+                        style: const TextStyle(fontSize: 13),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
+                  ],
                   Text('Tipo de transacción',
                       style: Theme.of(context).textTheme.titleSmall),
                   const SizedBox(height: 8),
@@ -302,34 +320,36 @@ class _FilterDrawerState extends State<FilterDrawer> {
                         return const SizedBox.shrink();
                       },
                     ),
-                  const SizedBox(height: 24),
-                  Text('Metodos de pago', style: Theme.of(context).textTheme.titleSmall),
-                  const SizedBox(height: 8),
-                  BlocBuilder<PaymentMethodBloc, PaymentMethodState>(
-                    builder: (context, state) {
-                      if (state is PaymentMethodLoaded) {
-                        return Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: state.paymentMethods.map((method) {
-                            final selected = _localFilter.paymentMethodIds.contains(method.id);
-                            return FilterChip(
-                              selected: selected,
-                              label: Text('${method.icon} ${method.name}', style: const TextStyle(fontSize: 13)),
-                              onSelected: (val) {
-                                setState(() {
-                                  final ids = Set<String>.from(_localFilter.paymentMethodIds);
-                                  val ? ids.add(method.id) : ids.remove(method.id);
-                                  _localFilter = _localFilter.copyWith(paymentMethodIds: ids);
-                                });
-                              },
-                            );
-                          }).toList(),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
+                  if (widget.showPaymentMethodFilter) ...[
+                    const SizedBox(height: 24),
+                    Text('Metodos de pago', style: Theme.of(context).textTheme.titleSmall),
+                    const SizedBox(height: 8),
+                    BlocBuilder<PaymentMethodBloc, PaymentMethodState>(
+                      builder: (context, state) {
+                        if (state is PaymentMethodLoaded) {
+                          return Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: state.paymentMethods.map((method) {
+                              final selected = _localFilter.paymentMethodIds.contains(method.id);
+                              return FilterChip(
+                                selected: selected,
+                                label: Text('${method.icon} ${method.name}', style: const TextStyle(fontSize: 13)),
+                                onSelected: (val) {
+                                  setState(() {
+                                    final ids = Set<String>.from(_localFilter.paymentMethodIds);
+                                    val ? ids.add(method.id) : ids.remove(method.id);
+                                    _localFilter = _localFilter.copyWith(paymentMethodIds: ids);
+                                  });
+                                },
+                              );
+                            }).toList(),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ],
                 ],
               ),
             ),

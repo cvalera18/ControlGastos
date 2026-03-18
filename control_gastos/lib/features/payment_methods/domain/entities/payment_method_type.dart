@@ -45,6 +45,19 @@ enum PaymentMethodType {
     }
   }
 
+  bool get hasBalance {
+    switch (this) {
+      case checkingAccount:
+      case savingsAccount:
+      case vistaAccount:
+      case digitalWallet:
+      case cash:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   static PaymentMethodType fromString(String? value) {
     return PaymentMethodType.values.firstWhere(
       (t) => t.name == value,
