@@ -19,8 +19,6 @@ class PaymentMethodPage extends StatefulWidget {
 class _PaymentMethodPageState extends State<PaymentMethodPage> {
   late final String _userId;
 
-  static const _icons = ['💳', '💵', '🏦', '📱', '💰', '🪙', '🏧', '💴', '🪪'];
-
   @override
   void initState() {
     super.initState();
@@ -40,7 +38,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
     final balanceController = TextEditingController(
       text: existing?.initialBalance != null
           ? existing!.initialBalance!.toStringAsFixed(2)
-          : '',
+          : '0.00',
     );
     final creditLimitController = TextEditingController(
       text: existing?.creditLimit != null
@@ -74,7 +72,9 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                       border: OutlineInputBorder(),
                       contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     ),
-                    items: PaymentMethodType.values.map((type) {
+                    items: PaymentMethodType.values
+                        .where((type) => type != PaymentMethodType.cash || isEdit) // Efectivo no se puede crear, solo editar
+                        .map((type) {
                       return DropdownMenuItem(
                         value: type,
                         child: Row(
@@ -101,31 +101,6 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                       labelText: 'Nombre',
                       border: OutlineInputBorder(),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('Ícono:', style: TextStyle(fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _icons.map((icon) {
-                      return GestureDetector(
-                        onTap: () => setStateDialog(() => selectedIcon = icon),
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: selectedIcon == icon
-                                  ? Theme.of(ctx).colorScheme.primary
-                                  : Colors.transparent,
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(icon, style: const TextStyle(fontSize: 20)),
-                        ),
-                      );
-                    }).toList(),
                   ),
                   // Campo de saldo para cuentas (no tarjetas) — solo al crear
                   if (showBalance && !isEdit) ...[
@@ -172,13 +147,33 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
               ),
               ElevatedButton(
                 onPressed: () {
-                  if (nameController.text.trim().isEmpty) return;
+                  if (nameController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(content: Text('El nombre es obligatorio')),
+                    );
+                    return;
+                  }
+
+                  // Validar campos obligatorios según tipo
+                  if (showBalance && !isEdit && balanceController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(content: Text('El saldo inicial es obligatorio')),
+                    );
+                    return;
+                  }
+
+                  if (showCreditLimit && creditLimitController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(content: Text('El cupo de la tarjeta es obligatorio')),
+                    );
+                    return;
+                  }
 
                   // En edición, el saldo inicial se preserva siempre
                   final newBalance = isEdit
                       ? existing.initialBalance
                       : (showBalance
-                          ? double.tryParse(balanceController.text.replaceAll(',', '.'))
+                          ? double.tryParse(balanceController.text.replaceAll(',', '.')) ?? 0
                           : null);
                   final newCreditLimit = showCreditLimit
                       ? double.tryParse(
@@ -189,7 +184,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                   DateTime? newStartDate;
                   if (isEdit) {
                     newStartDate = existing.balanceStartDate;
-                  } else if (newBalance != null) {
+                  } else if (newBalance != null && newBalance != 0) {
                     newStartDate = DateTime.now();
                   }
 
@@ -354,20 +349,22 @@ class _PaymentMethodCard extends StatelessWidget {
                 ],
               ),
             ),
-            Column(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: onEdit,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: onDelete,
-                ),
-              ],
-            ),
+            // No mostrar botones para la cuenta Efectivo
+            if (method.type != PaymentMethodType.cash)
+              Column(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: onEdit,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: onDelete,
+                  ),
+                ],
+              ),
           ],
           ),
         ),

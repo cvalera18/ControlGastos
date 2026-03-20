@@ -11,13 +11,19 @@ class SeedDefaultPaymentMethodsUseCase {
 
   Future<void> call(String userId) async {
     for (final method in AppConstants.defaultPaymentMethods) {
+      final type = PaymentMethodType.fromString(method['type'] as String?);
+      final now = DateTime.now();
+
       final paymentMethod = PaymentMethod(
         id: const Uuid().v4(),
         userId: userId,
         name: method['name'] as String,
         icon: method['icon'] as String,
-        type: PaymentMethodType.fromString(method['type'] as String?),
+        type: type,
         isDefault: true,
+        initialBalance: type.hasBalance ? 0 : null,
+        balanceStartDate: type.hasBalance ? now : null,
+        creditLimit: type == PaymentMethodType.creditCard ? 0 : null,
       );
       await repository.addPaymentMethod(paymentMethod);
     }

@@ -18,6 +18,9 @@ import 'package:control_gastos/shared/presentation/widgets/filter_drawer.dart';
 import 'package:control_gastos/shared/presentation/widgets/month_navigator.dart';
 import 'package:control_gastos/shared/presentation/widgets/total_card.dart';
 import 'package:control_gastos/core/extensions/context_extensions.dart';
+import 'package:control_gastos/features/recurring_expenses/presentation/bloc/recurring_expense_bloc.dart';
+import 'package:control_gastos/features/recurring_expenses/presentation/bloc/recurring_expense_event.dart';
+import 'package:control_gastos/features/recurring_expenses/presentation/bloc/recurring_expense_state.dart';
 
 // ─── Sealed union for merged transaction list ─────────────────────────────────
 
@@ -73,6 +76,9 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
     context.read<IncomeBloc>().add(FetchIncomesEvent(_userId));
     context.read<CategoryBloc>().add(FetchCategoriesEvent(_userId));
     context.read<PaymentMethodBloc>().add(FetchPaymentMethodsEvent(_userId));
+    context
+        .read<RecurringExpenseBloc>()
+        .add(GenerateDueExpensesEvent(_userId));
   }
 
   List<Expense> _filterExpenses(List<Expense> expenses) {
@@ -165,7 +171,13 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
         onTap: () {
           if (_speedDialOpen) setState(() => _speedDialOpen = false);
         },
-        child: BlocConsumer<ExpenseBloc, ExpenseState>(
+        child: BlocListener<RecurringExpenseBloc, RecurringExpenseState>(
+          listener: (context, state) {
+            if (state is RecurringExpenseGenerationDone && state.count > 0) {
+              context.read<ExpenseBloc>().add(FetchExpensesEvent(_userId));
+            }
+          },
+          child: BlocConsumer<ExpenseBloc, ExpenseState>(
           listener: (context, state) {
             if (state is ExpenseOperationSuccess) {
               _fetchAll();
@@ -259,6 +271,7 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
               },
             );
           },
+        ),
         ),
       ),
     );
@@ -554,6 +567,14 @@ class _AppDrawer extends StatelessWidget {
             onTap: () {
               Navigator.pop(context);
               GoRouter.of(context).push('/payment-methods');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.repeat),
+            title: const Text('Suscripciones'),
+            onTap: () {
+              Navigator.pop(context);
+              GoRouter.of(context).push('/recurring-expenses');
             },
           ),
           const Divider(),

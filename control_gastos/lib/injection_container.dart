@@ -70,6 +70,16 @@ import 'package:control_gastos/features/groups/presentation/bloc/group_bloc.dart
 import 'package:control_gastos/features/groups/presentation/bloc/group_category_bloc.dart';
 
 import 'package:control_gastos/features/incomes/data/datasources/income_remote_datasource.dart';
+
+import 'package:control_gastos/features/recurring_expenses/data/datasources/recurring_expense_remote_datasource.dart';
+import 'package:control_gastos/features/recurring_expenses/data/repositories/recurring_expense_repository_impl.dart';
+import 'package:control_gastos/features/recurring_expenses/domain/repositories/recurring_expense_repository.dart';
+import 'package:control_gastos/features/recurring_expenses/domain/usecases/add_recurring_expense_usecase.dart';
+import 'package:control_gastos/features/recurring_expenses/domain/usecases/delete_recurring_expense_usecase.dart';
+import 'package:control_gastos/features/recurring_expenses/domain/usecases/generate_due_expenses_usecase.dart';
+import 'package:control_gastos/features/recurring_expenses/domain/usecases/get_recurring_expenses_usecase.dart';
+import 'package:control_gastos/features/recurring_expenses/domain/usecases/update_recurring_expense_usecase.dart';
+import 'package:control_gastos/features/recurring_expenses/presentation/bloc/recurring_expense_bloc.dart';
 import 'package:control_gastos/features/incomes/data/repositories/income_repository_impl.dart';
 import 'package:control_gastos/features/incomes/domain/repositories/income_repository.dart';
 import 'package:control_gastos/features/incomes/domain/usecases/add_income_usecase.dart';
@@ -298,6 +308,43 @@ Future<void> setupLocator() async {
       addIncomeUseCase: getIt(),
       updateIncomeUseCase: getIt(),
       deleteIncomeUseCase: getIt(),
+    ),
+  );
+
+  // RecurringExpense datasource
+  getIt.registerSingleton<RecurringExpenseRemoteDataSource>(
+    RecurringExpenseRemoteDataSourceImpl(firestore: getIt()),
+  );
+
+  // RecurringExpense repository
+  getIt.registerSingleton<RecurringExpenseRepository>(
+    RecurringExpenseRepositoryImpl(remoteDataSource: getIt()),
+  );
+
+  // RecurringExpense usecases
+  getIt.registerSingleton<GetRecurringExpensesUseCase>(
+      GetRecurringExpensesUseCase(getIt()));
+  getIt.registerSingleton<AddRecurringExpenseUseCase>(
+      AddRecurringExpenseUseCase(getIt()));
+  getIt.registerSingleton<UpdateRecurringExpenseUseCase>(
+      UpdateRecurringExpenseUseCase(getIt()));
+  getIt.registerSingleton<DeleteRecurringExpenseUseCase>(
+      DeleteRecurringExpenseUseCase(getIt()));
+  getIt.registerSingleton<GenerateDueExpensesUseCase>(
+    GenerateDueExpensesUseCase(
+      recurringRepository: getIt(),
+      expenseRepository: getIt(),
+    ),
+  );
+
+  // RecurringExpense BLoC
+  getIt.registerFactory<RecurringExpenseBloc>(
+    () => RecurringExpenseBloc(
+      getRecurringExpensesUseCase: getIt(),
+      addRecurringExpenseUseCase: getIt(),
+      updateRecurringExpenseUseCase: getIt(),
+      deleteRecurringExpenseUseCase: getIt(),
+      generateDueExpensesUseCase: getIt(),
     ),
   );
 }

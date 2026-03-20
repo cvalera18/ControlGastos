@@ -19,6 +19,9 @@ import 'package:control_gastos/features/incomes/presentation/pages/add_income_pa
 import 'package:control_gastos/features/payment_methods/domain/entities/payment_method.dart';
 import 'package:control_gastos/features/payment_methods/presentation/bloc/payment_method_bloc.dart';
 import 'package:control_gastos/features/payment_methods/presentation/pages/payment_method_detail_page.dart';
+import 'package:control_gastos/features/recurring_expenses/domain/entities/recurring_expense.dart';
+import 'package:control_gastos/features/recurring_expenses/presentation/pages/add_recurring_expense_page.dart';
+import 'package:control_gastos/features/recurring_expenses/presentation/pages/recurring_expense_page.dart';
 import 'package:control_gastos/injection_container.dart';
 
 GoRouter createRouter(AuthBloc authBloc) {
@@ -60,6 +63,20 @@ GoRouter createRouter(AuthBloc authBloc) {
         ),
       ),
       GoRoute(path: '/categories', builder: (_, __) => const CategoryManagePage()),
+      GoRoute(
+          path: '/recurring-expenses',
+          builder: (_, _) => const RecurringExpensePage()),
+      GoRoute(
+        path: '/add-recurring-expense',
+        builder: (_, state) => BlocProvider(
+          create: (_) => getIt<GroupCategoryBloc>(),
+          child: AddRecurringExpensePage(
+            existing: state.extra is RecurringExpense
+                ? state.extra as RecurringExpense
+                : null,
+          ),
+        ),
+      ),
       GoRoute(path: '/groups', builder: (_, __) => const GroupListPage()),
       GoRoute(
         path: '/add-income',

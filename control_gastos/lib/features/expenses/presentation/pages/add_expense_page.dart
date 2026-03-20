@@ -9,6 +9,8 @@ import 'package:control_gastos/features/categories/domain/entities/category.dart
 import 'package:control_gastos/features/categories/presentation/bloc/category_bloc.dart';
 import 'package:control_gastos/features/expenses/domain/entities/expense.dart';
 import 'package:control_gastos/features/expenses/presentation/bloc/expense_bloc.dart';
+import 'package:control_gastos/features/incomes/domain/entities/income.dart';
+import 'package:control_gastos/features/incomes/presentation/bloc/income_bloc.dart';
 import 'package:control_gastos/features/expenses/presentation/widgets/category_selector.dart';
 import 'package:control_gastos/features/groups/domain/entities/group.dart';
 import 'package:control_gastos/features/groups/domain/entities/group_category.dart';
@@ -16,6 +18,7 @@ import 'package:control_gastos/features/groups/domain/entities/group_expense.dar
 import 'package:control_gastos/features/groups/presentation/bloc/group_bloc.dart';
 import 'package:control_gastos/features/groups/presentation/bloc/group_category_bloc.dart';
 import 'package:control_gastos/features/payment_methods/domain/entities/payment_method.dart';
+import 'package:control_gastos/features/payment_methods/domain/entities/payment_method_type.dart';
 import 'package:control_gastos/features/payment_methods/presentation/bloc/payment_method_bloc.dart';
 
 class AddExpensePage extends StatefulWidget {
@@ -42,6 +45,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
 
   PaymentMethod? _selectedPaymentMethod;
   Group? _selectedGroup;
+  bool _isWithdrawal = false;
 
   // Pre-fill IDs for edit mode
   String? _prefillCategoryId;       // solo para gastos personales
@@ -96,6 +100,10 @@ class _AddExpensePageState extends State<AddExpensePage> {
       // Limpiar categoría al cambiar de modo
       _selectedPersonalCategory = null;
       _selectedGroupCategory = null;
+      // Si se selecciona un grupo, deseleccionar retiro de efectivo
+      if (group != null) {
+        _isWithdrawal = false;
+      }
     });
     if (group != null) {
       context.read<GroupCategoryBloc>().add(FetchGroupCategoriesEvent(group.id));
@@ -158,6 +166,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
         paymentMethodName: _selectedPaymentMethod!.name,
         date: _selectedDate,
         notes: notes,
+        isWithdrawal: existing.isWithdrawal,
         updatedAt: now,
       );
       context.read<ExpenseBloc>().add(UpdateExpenseEvent(updated));
@@ -202,10 +211,36 @@ class _AddExpensePageState extends State<AddExpensePage> {
         date: _selectedDate,
         notes: notes,
         groupId: _groupMode ? _selectedGroup!.id : null,
+        isWithdrawal: _isWithdrawal,
         createdAt: now,
         updatedAt: now,
       );
       context.read<ExpenseBloc>().add(AddExpenseEvent(expense));
+
+      // Si es retiro de efectivo, crear automáticamente un ingreso en Efectivo
+      if (_isWithdrawal) {
+        // Buscar la cuenta Efectivo
+        final paymentMethodState = context.read<PaymentMethodBloc>().state;
+        if (paymentMethodState is PaymentMethodLoaded) {
+          final cashAccount = paymentMethodState.paymentMethods
+              .firstWhere((m) => m.type == PaymentMethodType.cash, orElse: () => paymentMethodState.paymentMethods.first);
+
+          final incomeId = const Uuid().v4();
+          final income = Income(
+            id: incomeId,
+            userId: authState.user.id,
+            amount: amount,
+            description: 'Retiro de ${_selectedPaymentMethod!.name}',
+            paymentMethodId: cashAccount.id,
+            paymentMethodName: cashAccount.name,
+            date: _selectedDate,
+            notes: notes,
+            createdAt: now,
+            updatedAt: now,
+          );
+          context.read<IncomeBloc>().add(AddIncomeEvent(income));
+        }
+      }
 
       // Si hay grupo, también guardar como gasto de grupo con el mismo ID
       if (_groupMode) {
@@ -261,13 +296,20 @@ class _AddExpensePageState extends State<AddExpensePage> {
           }
         },
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            16 + MediaQuery.of(context).padding.bottom + 20,
+          ),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // ── Grupo (opcional en creación; solo lectura en edición grupal) ──
+                // No mostrar grupo si es retiro de efectivo
+                if (!_isWithdrawal)
                 BlocBuilder<GroupBloc, GroupState>(
                   builder: (context, state) {
                     if (state is GroupsLoaded && state.groups.isNotEmpty) {
@@ -315,13 +357,43 @@ class _AddExpensePageState extends State<AddExpensePage> {
                               },
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
                         ],
                       );
                     }
                     return const SizedBox.shrink();
                   },
                 ),
+
+                // ── Retiro de efectivo (toggle) ───────────────────────────────
+                // Solo mostrar si no hay grupo seleccionado
+                if (!_isEditMode && !_groupMode) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Retiro de efectivo',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                      Switch(
+                        value: _isWithdrawal,
+                        onChanged: (value) => setState(() => _isWithdrawal = value),
+                      ),
+                    ],
+                  ),
+                  if (_isWithdrawal)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        'Se creará automáticamente un ingreso en tu cuenta de Efectivo',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 12),
+                ],
 
                 // ── Monto ────────────────────────────────────────────────────
                 TextFormField(
@@ -330,7 +402,6 @@ class _AddExpensePageState extends State<AddExpensePage> {
                   decoration: const InputDecoration(
                     labelText: 'Monto',
                     prefixIcon: Icon(Icons.attach_money),
-                    prefixText: '\$ ',
                   ),
                   validator: Validators.amount,
                 ),
@@ -349,7 +420,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
 
                 // ── Fecha ────────────────────────────────────────────────────
                 ListTile(
-                  contentPadding: EdgeInsets.zero,
+                  contentPadding: const EdgeInsets.only(left: 12),
                   leading: const Icon(Icons.calendar_today),
                   title: Text(
                       'Fecha: ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}'),
@@ -440,14 +511,16 @@ class _AddExpensePageState extends State<AddExpensePage> {
                   ),
                 const SizedBox(height: 16),
 
-                // ── Método de pago ───────────────────────────────────────────
-                const Text('Método de pago',
-                    style: TextStyle(fontWeight: FontWeight.w500)),
+                // ── Método de pago / Retiro de ───────────────────────────────
+                Text(
+                  _isWithdrawal ? 'Desde dónde retira' : 'Método de pago',
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
                 const SizedBox(height: 8),
                 BlocBuilder<PaymentMethodBloc, PaymentMethodState>(
                   builder: (context, state) {
                     if (state is PaymentMethodLoaded) {
-                      if (_selectedPaymentMethod == null && _prefillMethodId != null) {
+                      if (_selectedPaymentMethod == null && _prefillMethodId != null && !_isWithdrawal) {
                         final match = state.paymentMethods
                             .where((m) => m.id == _prefillMethodId)
                             .firstOrNull;
@@ -457,14 +530,20 @@ class _AddExpensePageState extends State<AddExpensePage> {
                           );
                         }
                       }
+
+                      // Filtrar: si es retiro, excluir Efectivo
+                      final filteredMethods = _isWithdrawal
+                          ? state.paymentMethods.where((m) => m.type != PaymentMethodType.cash).toList()
+                          : state.paymentMethods;
+
                       return SizedBox(
                         height: 48,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
-                          itemCount: state.paymentMethods.length,
+                          itemCount: filteredMethods.length,
                           separatorBuilder: (_, __) => const SizedBox(width: 8),
                           itemBuilder: (context, index) {
-                            final method = state.paymentMethods[index];
+                            final method = filteredMethods[index];
                             final isSelected = _selectedPaymentMethod?.id == method.id;
                             return FilterChip(
                               label: Text('${method.icon} ${method.name}'),

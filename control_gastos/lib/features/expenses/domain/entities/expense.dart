@@ -14,6 +14,7 @@ class Expense extends Equatable {
   final DateTime date;
   final String? notes;
   final String? groupId;
+  final bool isWithdrawal;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -31,6 +32,7 @@ class Expense extends Equatable {
     required this.date,
     this.notes,
     this.groupId,
+    this.isWithdrawal = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -49,6 +51,7 @@ class Expense extends Equatable {
     DateTime? date,
     String? notes,
     String? groupId,
+    bool? isWithdrawal,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -66,6 +69,7 @@ class Expense extends Equatable {
       date: date ?? this.date,
       notes: notes ?? this.notes,
       groupId: groupId ?? this.groupId,
+      isWithdrawal: isWithdrawal ?? this.isWithdrawal,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -82,6 +86,7 @@ class Expense extends Equatable {
         date,
         notes,
         groupId,
+        isWithdrawal,
         createdAt,
         updatedAt,
       ];

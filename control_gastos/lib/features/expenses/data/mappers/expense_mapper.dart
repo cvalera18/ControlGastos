@@ -18,6 +18,7 @@ class ExpenseMapper {
         date: model.date,
         notes: model.notes,
         groupId: model.groupId,
+        isWithdrawal: model.isWithdrawal,
         createdAt: model.createdAt,
         updatedAt: model.updatedAt,
       );
@@ -36,6 +37,7 @@ class ExpenseMapper {
         date: entity.date,
         notes: entity.notes,
         groupId: entity.groupId,
+        isWithdrawal: entity.isWithdrawal,
         createdAt: entity.createdAt,
         updatedAt: entity.updatedAt,
       );

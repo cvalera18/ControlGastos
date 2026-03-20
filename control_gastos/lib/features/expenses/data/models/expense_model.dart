@@ -15,6 +15,7 @@ class ExpenseModel {
   final DateTime date;
   final String? notes;
   final String? groupId;
+  final bool isWithdrawal;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -32,6 +33,7 @@ class ExpenseModel {
     required this.date,
     this.notes,
     this.groupId,
+    this.isWithdrawal = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -57,6 +59,7 @@ class ExpenseModel {
       date: parseDate(json['date']),
       notes: json['notes'] as String?,
       groupId: json['groupId'] as String?,
+      isWithdrawal: json['isWithdrawal'] as bool? ?? false,
       createdAt: parseDate(json['createdAt']),
       updatedAt: parseDate(json['updatedAt']),
     );
@@ -76,6 +79,7 @@ class ExpenseModel {
         'date': Timestamp.fromDate(date),
         'notes': notes,
         'groupId': groupId,
+        'isWithdrawal': isWithdrawal,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
       };
