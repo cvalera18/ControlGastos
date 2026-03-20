@@ -136,6 +136,13 @@ class _PaymentMethodDetailPageState extends State<PaymentMethodDetailPage> {
           ],
         ),
         actions: [
+          if (method.type == PaymentMethodType.creditCard)
+            IconButton(
+              icon: const Icon(Icons.repeat),
+              tooltip: 'Gastos operacionales',
+              onPressed: () => GoRouter.of(context)
+                  .push('/credit-card-expenses', extra: method),
+            ),
           IconButton(
             icon: Icon(
               Icons.tune,
@@ -692,6 +699,8 @@ class _DetailSpeedDial extends StatelessWidget {
     );
   }
 }
+
+// ─── Dial option ──────────────────────────────────────────────────────────────
 
 class _DialOption extends StatelessWidget {
   final String label;

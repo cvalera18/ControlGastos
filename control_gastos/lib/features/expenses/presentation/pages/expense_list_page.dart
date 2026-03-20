@@ -482,29 +482,34 @@ class _AppDrawer extends StatelessWidget {
 
   const _AppDrawer({required this.userName, required this.userEmail});
 
+  void _nav(BuildContext context, String route) {
+    Navigator.pop(context);
+    GoRouter.of(context).push(route);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-            ),
+            decoration: BoxDecoration(color: colorScheme.primary),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 CircleAvatar(
-                  backgroundColor: Theme.of(context).colorScheme.onPrimary,
+                  backgroundColor: colorScheme.onPrimary,
                   radius: 28,
                   child: Text(
                     userName.isNotEmpty ? userName[0].toUpperCase() : '?',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
+                      color: colorScheme.primary,
                     ),
                   ),
                 ),
@@ -512,7 +517,7 @@ class _AppDrawer extends StatelessWidget {
                 Text(
                   userName,
                   style: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimary,
+                    color: colorScheme.onPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
@@ -520,10 +525,7 @@ class _AppDrawer extends StatelessWidget {
                 Text(
                   userEmail,
                   style: TextStyle(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onPrimary
-                        .withValues(alpha: 0.8),
+                    color: colorScheme.onPrimary.withValues(alpha: 0.8),
                     fontSize: 12,
                   ),
                 ),
@@ -538,49 +540,71 @@ class _AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.bar_chart),
-            title: const Text('Analisis'),
-            onTap: () {
-              Navigator.pop(context);
-              GoRouter.of(context).push('/analytics');
-            },
+            title: const Text('Análisis'),
+            onTap: () => _nav(context, '/analytics'),
           ),
-          ListTile(
-            leading: const Icon(Icons.group_outlined),
-            title: const Text('Grupos'),
-            onTap: () {
-              Navigator.pop(context);
-              GoRouter.of(context).push('/groups');
-            },
+          const Divider(height: 1),
+          ExpansionTile(
+            leading: const Icon(Icons.folder_outlined),
+            title: const Text('Organización'),
+            initiallyExpanded: false,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.group_outlined),
+                title: const Text('Grupos'),
+                contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                onTap: () => _nav(context, '/groups'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.repeat),
+                title: const Text('Suscripciones'),
+                contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                onTap: () => _nav(context, '/recurring-expenses'),
+              ),
+            ],
           ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.category_outlined),
-            title: const Text('Categorias'),
-            onTap: () {
-              Navigator.pop(context);
-              GoRouter.of(context).push('/categories');
-            },
+          ExpansionTile(
+            leading: const Icon(Icons.settings_outlined),
+            title: const Text('Configuración'),
+            initiallyExpanded: false,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.category_outlined),
+                title: const Text('Categorías'),
+                contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                onTap: () => _nav(context, '/categories'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.credit_card_outlined),
+                title: const Text('Métodos de pago'),
+                contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                onTap: () => _nav(context, '/payment-methods'),
+              ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.credit_card_outlined),
-            title: const Text('Metodos de pago'),
-            onTap: () {
-              Navigator.pop(context);
-              GoRouter.of(context).push('/payment-methods');
-            },
+          ExpansionTile(
+            leading: const Icon(Icons.credit_score_outlined),
+            title: const Text('Tarjetas de Crédito'),
+            initiallyExpanded: false,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.credit_card),
+                title: const Text('Ver tarjetas'),
+                contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                onTap: () => _nav(context, '/credit-cards'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.repeat),
+                title: const Text('Gastos recurrentes'),
+                contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                onTap: () => _nav(context, '/credit-card-expenses'),
+              ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.repeat),
-            title: const Text('Suscripciones'),
-            onTap: () {
-              Navigator.pop(context);
-              GoRouter.of(context).push('/recurring-expenses');
-            },
-          ),
-          const Divider(),
+          const Divider(height: 1),
           ListTile(
             leading: const Icon(Icons.logout),
-            title: const Text('Cerrar sesion'),
+            title: const Text('Cerrar sesión'),
             onTap: () {
               Navigator.pop(context);
               context.read<AuthBloc>().add(const AuthLogoutEvent());

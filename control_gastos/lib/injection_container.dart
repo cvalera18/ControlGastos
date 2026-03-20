@@ -77,6 +77,7 @@ import 'package:control_gastos/features/recurring_expenses/domain/repositories/r
 import 'package:control_gastos/features/recurring_expenses/domain/usecases/add_recurring_expense_usecase.dart';
 import 'package:control_gastos/features/recurring_expenses/domain/usecases/delete_recurring_expense_usecase.dart';
 import 'package:control_gastos/features/recurring_expenses/domain/usecases/generate_due_expenses_usecase.dart';
+import 'package:control_gastos/features/recurring_expenses/domain/usecases/get_recurring_expenses_by_payment_method_usecase.dart';
 import 'package:control_gastos/features/recurring_expenses/domain/usecases/get_recurring_expenses_usecase.dart';
 import 'package:control_gastos/features/recurring_expenses/domain/usecases/update_recurring_expense_usecase.dart';
 import 'package:control_gastos/features/recurring_expenses/presentation/bloc/recurring_expense_bloc.dart';
@@ -324,6 +325,8 @@ Future<void> setupLocator() async {
   // RecurringExpense usecases
   getIt.registerSingleton<GetRecurringExpensesUseCase>(
       GetRecurringExpensesUseCase(getIt()));
+  getIt.registerSingleton<GetRecurringExpensesByPaymentMethodUseCase>(
+      GetRecurringExpensesByPaymentMethodUseCase(getIt()));
   getIt.registerSingleton<AddRecurringExpenseUseCase>(
       AddRecurringExpenseUseCase(getIt()));
   getIt.registerSingleton<UpdateRecurringExpenseUseCase>(
@@ -341,6 +344,7 @@ Future<void> setupLocator() async {
   getIt.registerFactory<RecurringExpenseBloc>(
     () => RecurringExpenseBloc(
       getRecurringExpensesUseCase: getIt(),
+      getByPaymentMethodUseCase: getIt(),
       addRecurringExpenseUseCase: getIt(),
       updateRecurringExpenseUseCase: getIt(),
       deleteRecurringExpenseUseCase: getIt(),

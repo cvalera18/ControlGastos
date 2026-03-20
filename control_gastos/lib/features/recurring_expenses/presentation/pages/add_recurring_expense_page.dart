@@ -21,8 +21,9 @@ import 'package:control_gastos/features/recurring_expenses/presentation/bloc/rec
 
 class AddRecurringExpensePage extends StatefulWidget {
   final RecurringExpense? existing;
+  final PaymentMethod? prefillPaymentMethod;
 
-  const AddRecurringExpensePage({super.key, this.existing});
+  const AddRecurringExpensePage({super.key, this.existing, this.prefillPaymentMethod});
 
   @override
   State<AddRecurringExpensePage> createState() =>
@@ -47,6 +48,7 @@ class _AddRecurringExpensePageState extends State<AddRecurringExpensePage> {
   String? _prefillMethodId;
   String? _prefillCategoryId;
   String? _prefillGroupCategoryId;
+  bool _methodLocked = false;
 
   bool get _isEdit => widget.existing != null;
   bool get _groupMode => _selectedGroup != null;
@@ -69,6 +71,9 @@ class _AddRecurringExpensePageState extends State<AddRecurringExpensePage> {
       } else {
         _prefillCategoryId = e.categoryId;
       }
+    } else if (widget.prefillPaymentMethod != null) {
+      _selectedMethod = widget.prefillPaymentMethod;
+      _methodLocked = true;
     }
 
     final authState = context.read<AuthBloc>().state;
@@ -316,44 +321,50 @@ class _AddRecurringExpensePageState extends State<AddRecurringExpensePage> {
                 const Text('Cuenta / Método de pago',
                     style: TextStyle(fontWeight: FontWeight.w500)),
                 const SizedBox(height: 8),
-                BlocBuilder<PaymentMethodBloc, PaymentMethodState>(
-                  builder: (context, state) {
-                    if (state is PaymentMethodLoaded) {
-                      if (_selectedMethod == null &&
-                          _prefillMethodId != null) {
-                        final match = state.paymentMethods
-                            .where((m) => m.id == _prefillMethodId)
-                            .firstOrNull;
-                        if (match != null) {
-                          WidgetsBinding.instance.addPostFrameCallback(
-                            (_) => setState(() => _selectedMethod = match),
-                          );
-                        }
-                      }
-                      return SizedBox(
-                        height: 48,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: state.paymentMethods.length,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(width: 8),
-                          itemBuilder: (context, index) {
-                            final method = state.paymentMethods[index];
-                            final isSelected =
-                                _selectedMethod?.id == method.id;
-                            return FilterChip(
-                              label: Text('${method.icon} ${method.name}'),
-                              selected: isSelected,
-                              onSelected: (_) =>
-                                  setState(() => _selectedMethod = method),
+                if (_methodLocked && _selectedMethod != null)
+                  Chip(
+                    avatar: Text(_selectedMethod!.icon),
+                    label: Text(_selectedMethod!.name),
+                  )
+                else
+                  BlocBuilder<PaymentMethodBloc, PaymentMethodState>(
+                    builder: (context, state) {
+                      if (state is PaymentMethodLoaded) {
+                        if (_selectedMethod == null &&
+                            _prefillMethodId != null) {
+                          final match = state.paymentMethods
+                              .where((m) => m.id == _prefillMethodId)
+                              .firstOrNull;
+                          if (match != null) {
+                            WidgetsBinding.instance.addPostFrameCallback(
+                              (_) => setState(() => _selectedMethod = match),
                             );
-                          },
-                        ),
-                      );
-                    }
-                    return const LinearProgressIndicator();
-                  },
-                ),
+                          }
+                        }
+                        return SizedBox(
+                          height: 48,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: state.paymentMethods.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(width: 8),
+                            itemBuilder: (context, index) {
+                              final method = state.paymentMethods[index];
+                              final isSelected =
+                                  _selectedMethod?.id == method.id;
+                              return FilterChip(
+                                label: Text('${method.icon} ${method.name}'),
+                                selected: isSelected,
+                                onSelected: (_) =>
+                                    setState(() => _selectedMethod = method),
+                              );
+                            },
+                          ),
+                        );
+                      }
+                      return const LinearProgressIndicator();
+                    },
+                  ),
                 const SizedBox(height: 16),
 
                 // ── Grupo (opcional) ─────────────────────────────────────────

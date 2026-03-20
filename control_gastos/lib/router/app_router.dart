@@ -20,7 +20,9 @@ import 'package:control_gastos/features/payment_methods/domain/entities/payment_
 import 'package:control_gastos/features/payment_methods/presentation/bloc/payment_method_bloc.dart';
 import 'package:control_gastos/features/payment_methods/presentation/pages/payment_method_detail_page.dart';
 import 'package:control_gastos/features/recurring_expenses/domain/entities/recurring_expense.dart';
+import 'package:control_gastos/features/recurring_expenses/presentation/bloc/recurring_expense_bloc.dart';
 import 'package:control_gastos/features/recurring_expenses/presentation/pages/add_recurring_expense_page.dart';
+import 'package:control_gastos/features/recurring_expenses/presentation/pages/credit_card_recurring_expenses_page.dart';
 import 'package:control_gastos/features/recurring_expenses/presentation/pages/recurring_expense_page.dart';
 import 'package:control_gastos/injection_container.dart';
 
@@ -57,6 +59,22 @@ GoRouter createRouter(AuthBloc authBloc) {
       GoRoute(path: '/analytics', builder: (_, __) => const AnalyticsPage()),
       GoRoute(path: '/payment-methods', builder: (_, __) => const PaymentMethodPage()),
       GoRoute(
+        path: '/credit-cards',
+        builder: (_, _) => const PaymentMethodPage(onlyCreditCards: true),
+      ),
+      GoRoute(
+        path: '/credit-card-expenses',
+        builder: (_, state) => MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => getIt<RecurringExpenseBloc>()),
+            BlocProvider(create: (_) => getIt<PaymentMethodBloc>()),
+          ],
+          child: CreditCardRecurringExpensesPage(
+            initialCard: state.extra is PaymentMethod ? state.extra as PaymentMethod : null,
+          ),
+        ),
+      ),
+      GoRoute(
         path: '/payment-method-detail',
         builder: (_, state) => PaymentMethodDetailPage(
           method: state.extra as PaymentMethod,
@@ -68,16 +86,26 @@ GoRouter createRouter(AuthBloc authBloc) {
           builder: (_, _) => const RecurringExpensePage()),
       GoRoute(
         path: '/add-recurring-expense',
-        builder: (_, state) => BlocProvider(
-          create: (_) => getIt<GroupCategoryBloc>(),
-          child: AddRecurringExpensePage(
-            existing: state.extra is RecurringExpense
-                ? state.extra as RecurringExpense
-                : null,
-          ),
-        ),
+        builder: (_, state) {
+          final extra = state.extra;
+          RecurringExpense? existing;
+          PaymentMethod? prefillPaymentMethod;
+          if (extra is RecurringExpense) {
+            existing = extra;
+          } else if (extra is Map<String, dynamic>) {
+            prefillPaymentMethod = extra['prefillPaymentMethod'] as PaymentMethod?;
+            existing = extra['existing'] as RecurringExpense?;
+          }
+          return BlocProvider(
+            create: (_) => getIt<GroupCategoryBloc>(),
+            child: AddRecurringExpensePage(
+              existing: existing,
+              prefillPaymentMethod: prefillPaymentMethod,
+            ),
+          );
+        },
       ),
-      GoRoute(path: '/groups', builder: (_, __) => const GroupListPage()),
+      GoRoute(path: '/groups', builder: (_, _) => const GroupListPage()),
       GoRoute(
         path: '/add-income',
         builder: (_, state) {

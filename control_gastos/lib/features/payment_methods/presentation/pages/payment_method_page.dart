@@ -10,7 +10,9 @@ import 'package:control_gastos/features/payment_methods/domain/entities/payment_
 import 'package:control_gastos/features/payment_methods/presentation/bloc/payment_method_bloc.dart';
 
 class PaymentMethodPage extends StatefulWidget {
-  const PaymentMethodPage({super.key});
+  final bool onlyCreditCards;
+
+  const PaymentMethodPage({super.key, this.onlyCreditCards = false});
 
   @override
   State<PaymentMethodPage> createState() => _PaymentMethodPageState();
@@ -233,7 +235,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Métodos de pago'),
+        title: Text(widget.onlyCreditCards ? 'Tarjetas de Crédito' : 'Métodos de pago'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => GoRouter.of(context).pop(),
@@ -257,14 +259,23 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (state is PaymentMethodLoaded) {
-            if (state.paymentMethods.isEmpty) {
-              return const Center(child: Text('No hay métodos de pago registrados'));
+            final methods = widget.onlyCreditCards
+                ? state.paymentMethods
+                    .where((m) => m.type == PaymentMethodType.creditCard)
+                    .toList()
+                : state.paymentMethods;
+            if (methods.isEmpty) {
+              return Center(
+                child: Text(widget.onlyCreditCards
+                    ? 'No hay tarjetas de crédito registradas'
+                    : 'No hay métodos de pago registrados'),
+              );
             }
             return ListView.builder(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 80),
-              itemCount: state.paymentMethods.length,
+              itemCount: methods.length,
               itemBuilder: (context, index) {
-                final method = state.paymentMethods[index];
+                final method = methods[index];
                 return _PaymentMethodCard(
                   method: method,
                   currentBalance: state.balances[method.id],

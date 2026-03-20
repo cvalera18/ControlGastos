@@ -47,3 +47,12 @@ class GenerateDueExpensesEvent extends RecurringExpenseEvent {
   @override
   List<Object?> get props => [userId];
 }
+
+class FetchRecurringExpensesByMethodEvent extends RecurringExpenseEvent {
+  final String userId;
+  final String paymentMethodId;
+  const FetchRecurringExpensesByMethodEvent(this.userId, this.paymentMethodId);
+
+  @override
+  List<Object?> get props => [userId, paymentMethodId];
+}

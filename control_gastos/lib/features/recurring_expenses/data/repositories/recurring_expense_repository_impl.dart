@@ -22,6 +22,17 @@ class RecurringExpenseRepositoryImpl implements RecurringExpenseRepository {
   }
 
   @override
+  Future<Either<Failure, List<RecurringExpense>>> getByPaymentMethod(
+      String userId, String paymentMethodId) async {
+    try {
+      final all = await remoteDataSource.getRecurringExpenses(userId);
+      return Right(all.where((e) => e.paymentMethodId == paymentMethodId).toList());
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> addRecurringExpense(
       RecurringExpense expense) async {
     try {
