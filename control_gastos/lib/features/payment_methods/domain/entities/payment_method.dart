@@ -14,6 +14,8 @@ class PaymentMethod extends Equatable {
   final DateTime? balanceStartDate;
   /// Cupo disponible para tarjetas de crédito.
   final double? creditLimit;
+  /// Día del mes en que corta el ciclo de la tarjeta de crédito (1–28).
+  final int? cutOffDay;
 
   const PaymentMethod({
     required this.id,
@@ -25,6 +27,7 @@ class PaymentMethod extends Equatable {
     this.initialBalance,
     this.balanceStartDate,
     this.creditLimit,
+    this.cutOffDay,
   });
 
   PaymentMethod copyWith({
@@ -37,6 +40,7 @@ class PaymentMethod extends Equatable {
     double? initialBalance,
     DateTime? balanceStartDate,
     double? creditLimit,
+    int? cutOffDay,
   }) {
     return PaymentMethod(
       id: id ?? this.id,
@@ -48,9 +52,10 @@ class PaymentMethod extends Equatable {
       initialBalance: initialBalance ?? this.initialBalance,
       balanceStartDate: balanceStartDate ?? this.balanceStartDate,
       creditLimit: creditLimit ?? this.creditLimit,
+      cutOffDay: cutOffDay ?? this.cutOffDay,
     );
   }
 
   @override
-  List<Object?> get props => [id, userId, name, icon, type, isDefault, initialBalance, balanceStartDate, creditLimit];
+  List<Object?> get props => [id, userId, name, icon, type, isDefault, initialBalance, balanceStartDate, creditLimit, cutOffDay];
 }

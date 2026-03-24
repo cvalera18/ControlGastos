@@ -49,6 +49,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
     );
     String selectedIcon = existing?.icon ?? PaymentMethodType.other.defaultIcon;
     PaymentMethodType selectedType = existing?.type ?? PaymentMethodType.other;
+    int? selectedCutOffDay = existing?.cutOffDay;
     final isEdit = existing != null;
 
     showDialog(
@@ -138,6 +139,22 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                         prefixText: '\$ ',
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<int>(
+                      initialValue: selectedCutOffDay,
+                      decoration: const InputDecoration(
+                        labelText: 'Día de corte',
+                        border: OutlineInputBorder(),
+                        helperText: 'Día del mes en que cierra tu ciclo',
+                      ),
+                      items: List.generate(28, (i) => i + 1)
+                          .map((d) => DropdownMenuItem(
+                                value: d,
+                                child: Text('Día $d'),
+                              ))
+                          .toList(),
+                      onChanged: (d) => setStateDialog(() => selectedCutOffDay = d),
+                    ),
                   ],
                 ],
               ),
@@ -201,6 +218,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                       initialBalance: newBalance,
                       balanceStartDate: newStartDate,
                       creditLimit: newCreditLimit,
+                      cutOffDay: showCreditLimit ? selectedCutOffDay : null,
                     );
                     context
                         .read<PaymentMethodBloc>()
@@ -215,6 +233,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                       initialBalance: newBalance,
                       balanceStartDate: newStartDate,
                       creditLimit: newCreditLimit,
+                      cutOffDay: showCreditLimit ? selectedCutOffDay : null,
                     );
                     context
                         .read<PaymentMethodBloc>()
@@ -357,6 +376,12 @@ class _PaymentMethodCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     _CreditRow(availableCredit: availableCredit!),
                   ],
+                  // Badge de fecha de corte
+                  if (method.type == PaymentMethodType.creditCard &&
+                      method.cutOffDay != null) ...[
+                    const SizedBox(height: 6),
+                    _CutOffBadge(cutOffDay: method.cutOffDay!),
+                  ],
                 ],
               ),
             ),
@@ -442,6 +467,47 @@ class _BalanceRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CutOffBadge extends StatelessWidget {
+  final int cutOffDay;
+
+  const _CutOffBadge({required this.cutOffDay});
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final thisMonthCut = DateTime(now.year, now.month, cutOffDay);
+    final nextCut = now.day < cutOffDay ? thisMonthCut : DateTime(now.year, now.month + 1, cutOffDay);
+    final daysUntil = nextCut.difference(DateTime(now.year, now.month, now.day)).inDays;
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final isUrgent = daysUntil <= 3;
+    final bgColor = isUrgent ? colorScheme.errorContainer : colorScheme.surfaceContainerHighest;
+    final textColor = isUrgent ? colorScheme.onErrorContainer : colorScheme.onSurfaceVariant;
+
+    final label = daysUntil == 0
+        ? 'Corta hoy'
+        : daysUntil == 1
+            ? 'Corta mañana'
+            : 'Corta en $daysUntil días';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.content_cut, size: 11, color: textColor),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(fontSize: 11, color: textColor)),
+        ],
+      ),
     );
   }
 }

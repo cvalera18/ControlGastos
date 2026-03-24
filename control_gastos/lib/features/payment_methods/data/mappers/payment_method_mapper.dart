@@ -14,6 +14,7 @@ class PaymentMethodMapper {
         initialBalance: model.initialBalance,
         balanceStartDate: model.balanceStartDate,
         creditLimit: model.creditLimit,
+        cutOffDay: model.cutOffDay,
       );
 
   static PaymentMethodModel toModel(PaymentMethod entity) => PaymentMethodModel(
@@ -26,5 +27,6 @@ class PaymentMethodMapper {
         initialBalance: entity.initialBalance,
         balanceStartDate: entity.balanceStartDate,
         creditLimit: entity.creditLimit,
+        cutOffDay: entity.cutOffDay,
       );
 }

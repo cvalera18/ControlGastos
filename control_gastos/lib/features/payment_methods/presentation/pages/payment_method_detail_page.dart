@@ -239,6 +239,27 @@ class _PaymentMethodDetailPageState extends State<PaymentMethodDetailPage> {
                 availableCredit = method.creditLimit! - totalSpent + totalPaid;
               }
 
+              // Totales por ciclo de facturación (solo TDC con fecha de corte)
+              double? currentCycleTotal;
+              double? prevCycleTotal;
+              if (method.cutOffDay != null) {
+                final now = DateTime.now();
+                final DateTime lastCut;
+                final DateTime prevCut;
+                if (now.day < method.cutOffDay!) {
+                  lastCut = DateTime(now.year, now.month - 1, method.cutOffDay!);
+                } else {
+                  lastCut = DateTime(now.year, now.month, method.cutOffDay!);
+                }
+                prevCut = DateTime(lastCut.year, lastCut.month - 1, method.cutOffDay!);
+                currentCycleTotal = allExpenses
+                    .where((e) => !e.date.isBefore(lastCut))
+                    .fold<double>(0.0, (s, e) => s + e.amount);
+                prevCycleTotal = allExpenses
+                    .where((e) => !e.date.isBefore(prevCut) && e.date.isBefore(lastCut))
+                    .fold<double>(0.0, (s, e) => s + e.amount);
+              }
+
               // Filtrar por período
               var periodExpenses = allExpenses.where((e) => _inPeriod(e.date)).toList();
               final periodIncomes = allIncomes.where((i) => _inPeriod(i.date)).toList();
@@ -284,6 +305,14 @@ class _PaymentMethodDetailPageState extends State<PaymentMethodDetailPage> {
                       expenseTotal: expenseTotal,
                       incomeTotal: incomeTotal,
                       txType: txType,
+                    ),
+                  if (method.cutOffDay != null)
+                    _CycleIndicatorBar(cutOffDay: method.cutOffDay!),
+                  if (method.cutOffDay != null && currentCycleTotal != null)
+                    _CycleSummaryCard(
+                      cutOffDay: method.cutOffDay!,
+                      currentCycleTotal: currentCycleTotal,
+                      prevCycleTotal: prevCycleTotal,
                     ),
 
                   MonthNavigator(filter: _filter, onChangeMonth: _changeMonth),
@@ -740,6 +769,230 @@ class _DialOption extends StatelessWidget {
           child: Icon(icon),
         ),
       ],
+    );
+  }
+}
+
+// ─── Cycle summary card ───────────────────────────────────────────────────────
+
+class _CycleSummaryCard extends StatelessWidget {
+  final int cutOffDay;
+  final double currentCycleTotal;
+  final double? prevCycleTotal;
+
+  const _CycleSummaryCard({
+    required this.cutOffDay,
+    required this.currentCycleTotal,
+    this.prevCycleTotal,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final DateTime lastCut;
+    final DateTime nextCut;
+    if (now.day < cutOffDay) {
+      lastCut = DateTime(now.year, now.month - 1, cutOffDay);
+      nextCut = DateTime(now.year, now.month, cutOffDay);
+    } else {
+      lastCut = DateTime(now.year, now.month, cutOffDay);
+      nextCut = DateTime(now.year, now.month + 1, cutOffDay);
+    }
+    final daysLeft = nextCut.difference(DateTime(now.year, now.month, now.day)).inDays;
+    final isUrgent = daysLeft <= 5;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    double? diffPct;
+    if (prevCycleTotal != null && prevCycleTotal! > 0) {
+      diffPct = ((currentCycleTotal - prevCycleTotal!) / prevCycleTotal!) * 100;
+    }
+
+    final onBg = isUrgent ? colorScheme.onErrorContainer : colorScheme.onSurface;
+    final onBgMuted = onBg.withValues(alpha: 0.6);
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isUrgent ? colorScheme.errorContainer : colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Alerta urgente
+          if (isUrgent) ...[
+            Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, size: 15, color: colorScheme.error),
+                const SizedBox(width: 6),
+                Text(
+                  daysLeft == 0
+                      ? '¡Corta hoy!'
+                      : daysLeft == 1
+                          ? 'Corta mañana'
+                          : 'Corta en $daysLeft días',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: colorScheme.error,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Divider(height: 1),
+            const SizedBox(height: 8),
+          ],
+
+          // Totales ciclo actual vs anterior
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Ciclo actual',
+                        style: Theme.of(context)
+                            .textTheme
+                            .labelSmall
+                            ?.copyWith(color: onBgMuted)),
+                    Text(
+                      CurrencyFormatter.format(currentCycleTotal),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: onBg,
+                          ),
+                    ),
+                    Text(
+                      'Desde ${lastCut.day}/${lastCut.month}',
+                      style: TextStyle(fontSize: 11, color: onBgMuted),
+                    ),
+                  ],
+                ),
+              ),
+              if (prevCycleTotal != null) ...[
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('Ciclo anterior',
+                        style: Theme.of(context)
+                            .textTheme
+                            .labelSmall
+                            ?.copyWith(color: onBgMuted)),
+                    Text(
+                      CurrencyFormatter.format(prevCycleTotal!),
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(color: onBgMuted),
+                    ),
+                    if (diffPct != null)
+                      Container(
+                        margin: const EdgeInsets.only(top: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: diffPct > 0
+                              ? colorScheme.error.withValues(alpha: 0.15)
+                              : colorScheme.tertiary.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '${diffPct > 0 ? '+' : ''}${diffPct.toStringAsFixed(0)}%',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: diffPct > 0
+                                ? colorScheme.error
+                                : colorScheme.tertiary,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Cycle indicator bar ──────────────────────────────────────────────────────
+
+class _CycleIndicatorBar extends StatelessWidget {
+  final int cutOffDay;
+
+  const _CycleIndicatorBar({required this.cutOffDay});
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    // Fecha del último corte y del próximo
+    final DateTime lastCut;
+    final DateTime nextCut;
+    if (now.day < cutOffDay) {
+      nextCut = DateTime(now.year, now.month, cutOffDay);
+      lastCut = DateTime(now.year, now.month - 1, cutOffDay);
+    } else {
+      lastCut = DateTime(now.year, now.month, cutOffDay);
+      nextCut = DateTime(now.year, now.month + 1, cutOffDay);
+    }
+
+    final totalDays = nextCut.difference(lastCut).inDays;
+    final elapsed = today.difference(lastCut).inDays;
+    final daysLeft = nextCut.difference(today).inDays;
+    final progress = (elapsed / totalDays).clamp(0.0, 1.0);
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final isUrgent = daysLeft <= 3;
+    final barColor = isUrgent ? colorScheme.error : colorScheme.primary;
+
+    final cutLabel = daysLeft == 0
+        ? 'Corta hoy'
+        : daysLeft == 1
+            ? 'Corta mañana'
+            : 'Corta en $daysLeft días (día $cutOffDay)';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Ciclo: $elapsed/$totalDays días',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              Text(
+                cutLabel,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: isUrgent ? barColor : colorScheme.onSurfaceVariant,
+                      fontWeight: isUrgent ? FontWeight.w600 : null,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              valueColor: AlwaysStoppedAnimation<Color>(barColor),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

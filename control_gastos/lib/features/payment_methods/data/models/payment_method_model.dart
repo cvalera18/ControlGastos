@@ -11,6 +11,7 @@ class PaymentMethodModel {
   final double? initialBalance;
   final DateTime? balanceStartDate;
   final double? creditLimit;
+  final int? cutOffDay;
 
   const PaymentMethodModel({
     required this.id,
@@ -22,6 +23,7 @@ class PaymentMethodModel {
     this.initialBalance,
     this.balanceStartDate,
     this.creditLimit,
+    this.cutOffDay,
   });
 
   factory PaymentMethodModel.fromJson(Map<String, dynamic> json, {String? id}) {
@@ -42,6 +44,7 @@ class PaymentMethodModel {
       initialBalance: (json['initialBalance'] as num?)?.toDouble(),
       balanceStartDate: parseDate(json['balanceStartDate']),
       creditLimit: (json['creditLimit'] as num?)?.toDouble(),
+      cutOffDay: json['cutOffDay'] as int?,
     );
   }
 
@@ -56,5 +59,6 @@ class PaymentMethodModel {
         // ISO string: compatible con jsonEncode (local cache) y con Firestore
         'balanceStartDate': balanceStartDate?.toIso8601String(),
         'creditLimit': creditLimit,
+        'cutOffDay': cutOffDay,
       };
 }
